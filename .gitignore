@@ -1,3 +1,6 @@
+# Secure files
+config.js
+
 # Logs
 logs
 *.log
