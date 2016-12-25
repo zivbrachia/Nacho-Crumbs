@@ -1,5 +1,6 @@
 # Secure files
 config.js
+serviceAccountKey.json
 
 # Logs
 logs
