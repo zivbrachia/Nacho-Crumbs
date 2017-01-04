@@ -4,12 +4,17 @@
   "description": "Bot Server for teaching biology (Hebrew)",
   "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "app.js"
   },
   "author": "Ziv Brachia",
   "license": "ISC",
   "dependencies": {
+    "apiai": "^3.0.3",
     "botbuilder": "^3.4.4",
+    "enum": "^2.3.0",
+    "firebase-admin": "^4.0.4",
+    "request": "^2.79.0",
     "restify": "^4.3.0"
   }
 }
