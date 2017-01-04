@@ -16,5 +16,8 @@
     "firebase-admin": "^4.0.4",
     "request": "^2.79.0",
     "restify": "^4.3.0"
+  },
+  "engines": {
+    "node": "6.9.1"
   }
 }
