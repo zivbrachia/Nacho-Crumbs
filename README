@@ -1,4 +1,4 @@
-Bot Server - 2
+Bot Server - 3
 
 This bot built with the microsoft bot framework.
 
@@ -9,6 +9,6 @@ For running this bot:
     process.env.MICROSOFT_APP_ID = '*******************';
     process.env.MICROSOFT_APP_PASSWORD = '*************';
 4) run the server: node app.js
-5) run: ngrok port 3978
+5) run: ngrok http 3978
 6) copy the https address to the register bot in microsoft framework
 7) you ready to go!!!!
