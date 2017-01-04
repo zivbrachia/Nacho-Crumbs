@@ -81,13 +81,16 @@ bot.dialog('/', function (session, args) {
 
     textRequest.on('response', function(response) {
         console.log(JSON.stringify(response));
+        var messages = [];
         var len = response.result.fulfillment.messages.length;
         for (var i=0; i<(len); i++) {
             var message = response.result.fulfillment.messages[i];
             console.log(message.type);
             switch(message.type) {
                 case 0: // Text response
-                    session.send(message.speech);
+                    var msg = new builder.Message(session).text(message.speech)
+                    messages.push(msg);
+                    //session.send(message.speech);
                     break;
                 case 1: // Image
                     break;
@@ -103,19 +106,30 @@ bot.dialog('/', function (session, args) {
                         quick_reply.payload = message.replies[i]; //"SOMETHING_SOMETHING";
                         facebookObj.quick_replies.push(quick_reply);
                     } 
-                    session.send(new builder.Message(session).sourceEvent({
+                    //session.send(new builder.Message(session).sourceEvent({
+                    //    "facebook": {
+                    //        "text": message.title,
+                    //        "quick_replies": facebookObj.quick_replies
+                    //    }
+                    //}));
+                    var msg = new builder.Message(session).sourceEvent({
                         "facebook": {
                             "text": message.title,
                             "quick_replies": facebookObj.quick_replies
                         }
-                    }));
+                    });
+                    messages.push(msg);
+                    
                     break;
                 case 3: // Card
                     break;
                 case 4: // Custom Payload
-                    session.send(new builder.Message(session).sourceEvent(message.payload));
+                    //session.send(new builder.Message(session).sourceEvent(message.payload));
+                    var msg = new builder.Message(session).sourceEvent(message.payload);
+                    messages.push(msg);
                     break;
-            }            
+            }
+            session.send(messages);
         }
     });
 
@@ -145,6 +159,7 @@ ref.child('users').child('facebook').child('1386701014687144').child('address').
     eventRequest.on('response', function(response) {
         console.log(JSON.stringify(response));
         var address = response.result.parameters.address;
+        var messages = [];
         var len = response.result.fulfillment.messages.length;
         for (var i=0; i<(len); i++) {
             var message = response.result.fulfillment.messages[i];
@@ -152,7 +167,7 @@ ref.child('users').child('facebook').child('1386701014687144').child('address').
             switch(message.type) {
                 case 0: // Text response
                     var msg = new builder.Message().address(address).text(message.speech);
-                    bot.send(msg);
+                    messages.push(msg);
                     break;
                 case 1: // Image
                     break;
@@ -167,20 +182,23 @@ ref.child('users').child('facebook').child('1386701014687144').child('address').
                         quick_reply.title = message.replies[i];
                         quick_reply.payload = message.replies[i]; //"SOMETHING_SOMETHING";
                         facebookObj.quick_replies.push(quick_reply);
-                    } 
-                    bot.send(new builder.Message().address(address).sourceEvent({
+                    }
+                    var msg = new builder.Message().address(address).sourceEvent({
                         "facebook": {
                             "text": message.title,
                             "quick_replies": facebookObj.quick_replies
                         }
-                    }));
+                    }); 
+                    messages.push(msg);
                     break;
                 case 3: // Card
                     break;
                 case 4: // Custom Payload
-                    bot.send(new builder.Message().address(address).sourceEvent(message.payload));
+                    var msg = new builder.Message().address(address).sourceEvent(message.payload);
+                    messages.push(msg);
                     break;
-            }            
+            }
+            bot.send(messages);
         }
     });
 
