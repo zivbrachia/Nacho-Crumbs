@@ -1,7 +1,7 @@
 Bot Server - 4
 
 This bot built with the microsoft bot framework.
-(Node.Js, Github, Microsoft bot framework, Heroku, Heroku Config Vars,Api.ai, Firebase)
+(Node.Js, Github, Microsoft bot framework, Heroku, Heroku Config Vars, Heroku CLI, Api.ai, Firebase)
 For running this bot:
 1) download the git
 2) command: npm install
@@ -12,3 +12,14 @@ For running this bot:
 5) run: ngrok http 3978
 6) copy the https address to the register bot in microsoft framework
 7) you ready to go!!!!
+
+-- update production version --
+1) git - upload to git
+2) open heroku CLI: heroku logs -t
+3) heroku - Deploy Branch
+3) update address at microsoft bot framework
+
+-- debug mode --
+1) localhost - run the server on debug mode
+2) run ngrok for https address
+3) update address at microsoft bot framework
