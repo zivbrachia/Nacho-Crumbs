@@ -14,7 +14,7 @@ function deleteIntentById(id, options) {
     });
 
     options.headers = {};
-    options.headers.Authorization = process.env.AUTHORIZATION;
+    options.headers.Authorization = process.env.APIAI_AUTHORIZATION;
 
     return client;
 }
@@ -26,7 +26,7 @@ function updateIntentById(id, options) {
     });
 
     options.headers = {};
-    options.headers.Authorization = process.env.AUTHORIZATION;
+    options.headers.Authorization = process.env.APIAI_AUTHORIZATION;
     options.headers['Content-Type'] = 'application/json; charset=utf-8';
 
     return client;
@@ -39,7 +39,7 @@ function createNewIntent(options) {
     });
 
     options.headers = {};
-    options.headers.Authorization = process.env.AUTHORIZATION;
+    options.headers.Authorization = process.env.APIAI_AUTHORIZATION;
     options.headers['Content-Type'] = 'application/json; charset=utf-8';
 
     return client;
@@ -52,7 +52,7 @@ function getIntentById(id, options) {
     });
 
     options.headers = {};
-    options.headers.Authorization = process.env.AUTHORIZATION;
+    options.headers.Authorization = process.env.APIAI_AUTHORIZATION;
 
     return client;
 }
@@ -64,7 +64,7 @@ function getIntents(options) {
     });
 
     options.headers = {};
-    options.headers.Authorization = process.env.AUTHORIZATION;
+    options.headers.Authorization = process.env.APIAI_AUTHORIZATION;
 
     return client;
 }
