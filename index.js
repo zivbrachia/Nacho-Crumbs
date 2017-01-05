@@ -3,29 +3,29 @@
 var restify = require('restify');
 var builder = require('botbuilder');
 var firebase = require('firebase-admin');
-var serviceAccount = "./serviceAccountKey.json"     // firebase credentials
+//var serviceAccount = "./serviceAccountKey.json"     // firebase credentials
 var apiai = require('apiai');
 var webRequest = require('request');
-require('./config.js');
+//require('./config.js');
 
-
+/*
 firebase.initializeApp({
     credential: firebase.credential.cert(serviceAccount),
     databaseURL: 'https://nacho-crumbs.firebaseio.com'
 });
-
+*/
 // setup firebase reference
-var ref = firebase.database().ref();
+//var ref = firebase.database().ref();
 //var messagesRef = ref.child('Messages');
 
 //messagesRef.push({
 //    "a":"a"
 //});
-
+/*
 ref.child('users').on('child_added', function(snap) {
     console.log(JSON.stringify(snap.val()) + "\n\n");
 });
-
+*/
 var app = apiai(process.env.APIAI_CLIENT_ACCESS_TOKEN);
 
 //=========================================================
@@ -140,7 +140,7 @@ bot.dialog('/', function (session, args) {
     textRequest.end();
 
 });
-
+/*
 ref.child('users').child('facebook').child('1386701014687144').child('address').on("value", function(snapshot) {
     var address = snapshot.val();
     ////////////////////////////////////////////////////
@@ -211,3 +211,4 @@ ref.child('users').child('facebook').child('1386701014687144').child('address').
 }, function (errorObject) {
   console.log("The read failed: " + errorObject.code);
 });
+*/
