@@ -6,7 +6,7 @@ var firebase = require('firebase-admin');
 var serviceAccount = "./serviceAccountKey.json"     // firebase credentials
 var apiai = require('apiai');
 var webRequest = require('request');
-require('./config.js');
+//require('./config.js');
 
 
 firebase.initializeApp({
