@@ -6,7 +6,7 @@ var firebase = require('firebase-admin');
 //var serviceAccount = "./serviceAccountKey.json"     // firebase credentials
 var apiai = require('apiai');
 var webRequest = require('request');
-//require('./config.js');
+require('./config.js');
 
 /*
 firebase.initializeApp({
@@ -56,7 +56,7 @@ server.post('/api/messages', connector.listen());
 //=========================================================
 bot.dialog('/', function (session, args) {
     session.sendTyping();
-    session.send("hi this is a test");
+    //session.send("hi this is a test");
     /*
     webRequest('https://graph.facebook.com/v2.6/'+ session.message.address.user.id +'?access_token=' + process.env.FACEBOOK_PAGE_ACCESS_TOKEN, function (error, response, body) {
         if (!error && response.statusCode == 200) {
@@ -74,7 +74,7 @@ bot.dialog('/', function (session, args) {
     //session.message.user.name;
     //session.message.type == 'message';
     console.log(session.message.text);
-    /*
+    
     var textRequest = app.textRequest(session.message.text, {
         sessionId: session.message.address.user.id
     });
@@ -88,9 +88,8 @@ bot.dialog('/', function (session, args) {
             console.log(message.type);
             switch(message.type) {
                 case 0: // Text response
-                    var msg = new builder.Message(session).text(message.speech)
+                    var msg = new builder.Message(session).text(message.speech);
                     messages.push(msg);
-                    //session.send(message.speech);
                     break;
                 case 1: // Image
                     break;
@@ -106,12 +105,6 @@ bot.dialog('/', function (session, args) {
                         quick_reply.payload = message.replies[i]; //"SOMETHING_SOMETHING";
                         facebookObj.quick_replies.push(quick_reply);
                     } 
-                    //session.send(new builder.Message(session).sourceEvent({
-                    //    "facebook": {
-                    //        "text": message.title,
-                    //        "quick_replies": facebookObj.quick_replies
-                    //    }
-                    //}));
                     var msg = new builder.Message(session).sourceEvent({
                         "facebook": {
                             "text": message.title,
@@ -124,12 +117,15 @@ bot.dialog('/', function (session, args) {
                 case 3: // Card
                     break;
                 case 4: // Custom Payload
-                    //session.send(new builder.Message(session).sourceEvent(message.payload));
                     var msg = new builder.Message(session).sourceEvent(message.payload);
                     messages.push(msg);
                     break;
             }
-            session.send(messages);
+        }
+        var len = messages.length;
+        for (var i=0; i<(len); i++) {
+            var message = messages[i];
+            session.send(message);
         }
     });
 
@@ -138,7 +134,6 @@ bot.dialog('/', function (session, args) {
     });
 
     textRequest.end();
-    */
 });
 /*
 ref.child('users').child('facebook').child('1386701014687144').child('address').on("value", function(snapshot) {
