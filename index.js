@@ -56,7 +56,7 @@ server.post('/api/messages', connector.listen());
 //=========================================================
 bot.dialog('/', function (session, args) {
     session.sendTyping();
-    //session.send("hi this is a test");
+    session.send("hi this is a test");
     /*
     webRequest('https://graph.facebook.com/v2.6/'+ session.message.address.user.id +'?access_token=' + process.env.FACEBOOK_PAGE_ACCESS_TOKEN, function (error, response, body) {
         if (!error && response.statusCode == 200) {
@@ -74,7 +74,7 @@ bot.dialog('/', function (session, args) {
     //session.message.user.name;
     //session.message.type == 'message';
     console.log(session.message.text);
-    
+    /*
     var textRequest = app.textRequest(session.message.text, {
         sessionId: session.message.address.user.id
     });
@@ -138,7 +138,7 @@ bot.dialog('/', function (session, args) {
     });
 
     textRequest.end();
-
+    */
 });
 /*
 ref.child('users').child('facebook').child('1386701014687144').child('address').on("value", function(snapshot) {
