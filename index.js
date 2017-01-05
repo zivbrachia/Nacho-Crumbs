@@ -11,7 +11,7 @@ require('./config.js');
 /*
 firebase.initializeApp({
     credential: firebase.credential.cert(serviceAccount),
-    databaseURL: 'https://nacho-crumbs.firebaseio.com'
+    databaseURL: process.env.DB_URL
 });
 */
 // setup firebase reference

@@ -1,7 +1,7 @@
 Bot Server - 3
 
 This bot built with the microsoft bot framework.
-
+(Node.Js, Github, Microsoft bot framework, Heroku, Heroku Config Vars,Api.ai, Firebase)
 For running this bot:
 1) download the git
 2) command: npm install
