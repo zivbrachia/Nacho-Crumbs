@@ -15,7 +15,7 @@ For running this bot:
 
 -- update production version --
 1) git - upload to git
-2) open heroku CLI: heroku logs -t
+2) open heroku CLI: heroku logs -t --app nacho-crumbs
 3) heroku - Deploy Branch
 3) update address at microsoft bot framework
 

@@ -43,7 +43,7 @@ bot.dialog('/', function (session) {
 });
 
 var options = {};
-var client = apiai.getIntents(options);
+var client = apiai.getInents(options);
 client.get(options, function(err, req, res) {
         console.log('get ' + JSON.parse(res.body));
 });

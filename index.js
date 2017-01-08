@@ -2,20 +2,20 @@
 
 var restify = require('restify');
 var builder = require('botbuilder');
-var firebase = require('firebase-admin');
-//var serviceAccount = "./serviceAccountKey.json"     // firebase credentials
 var apiai = require('apiai');
 var webRequest = require('request');
 //require('./config.js');
+var firebase = require('firebase-admin');
+var db_credential = require('./serviceAccountKey.js');
 
-/*
+
 firebase.initializeApp({
-    credential: firebase.credential.cert(serviceAccount),
+    credential: firebase.credential.cert(db_credential.serviceAccount),
     databaseURL: process.env.DB_URL
 });
-*/
+
 // setup firebase reference
-//var ref = firebase.database().ref();
+var ref = firebase.database().ref();
 //var messagesRef = ref.child('Messages');
 
 //messagesRef.push({
@@ -66,9 +66,7 @@ bot.dialog('/', function (session, args) {
         }
     });
     */
-    //var refUser = ref.child('users').child(session.message.address.channelId).child(session.message.address.user.id).child('address').update(session.message.address);
-    //var reזUser = ref.child('users').child(session.message.address.channelId).child(session.message.address.user.id).child('session').update(JSON.parse(session));
-    //var refUser = ref.child('users').child(session.message.address.channelId).child(session.message.address.user.id).child('session').update(session);
+    var refUser = ref.child('users').child(session.message.address.channelId).child(session.message.address.user.id).child('address').update(session.message.address);
     //session.send("Hello " + firstname);
     //session.message.address.channelId == 'facebook';
     //session.message.user.name;
@@ -135,9 +133,10 @@ bot.dialog('/', function (session, args) {
 
     textRequest.end();
 });
-/*
+
 ref.child('users').child('facebook').child('1386701014687144').child('address').on("value", function(snapshot) {
     var address = snapshot.val();
+    if (address===null) return;
     ////////////////////////////////////////////////////
     var event = {
         name : 'INVOKE_EVENT',
@@ -206,4 +205,3 @@ ref.child('users').child('facebook').child('1386701014687144').child('address').
 }, function (errorObject) {
   console.log("The read failed: " + errorObject.code);
 });
-*/
