@@ -133,7 +133,7 @@ bot.dialog('/', function (session, args) {
 
     textRequest.end();
 });
-
+/*
 ref.child('users').child('facebook').child('1386701014687144').child('address').on("value", function(snapshot) {
     var address = snapshot.val();
     if (address===null) return;
@@ -205,3 +205,4 @@ ref.child('users').child('facebook').child('1386701014687144').child('address').
 }, function (errorObject) {
   console.log("The read failed: " + errorObject.code);
 });
+*/
