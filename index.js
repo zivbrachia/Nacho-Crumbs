@@ -8,6 +8,7 @@ var webRequest = require('request');
 var firebase = require('firebase-admin');
 var db_credential = require('./serviceAccountKey.js');
 
+console.log(db_credential);
 firebase.initializeApp({
     credential: firebase.credential.cert(db_credential.serviceAccount),
     databaseURL: process.env.DB_URL
@@ -15,7 +16,6 @@ firebase.initializeApp({
 
 // setup firebase reference
 var ref = firebase.database().ref();
-var refUser = ref.child('test').update(db_credential.serviceAccount);
 //var messagesRef = ref.child('Messages');
 
 //messagesRef.push({
@@ -142,7 +142,7 @@ bot.dialog('/', function (session, args) {
 
     textRequest.end();
 });
-
+/*
 ref.child('users').child('facebook').child('1386701014687144').child('address').on("value", function(snapshot) {
     var address = snapshot.val();
     if (address===null) return;
@@ -214,3 +214,4 @@ ref.child('users').child('facebook').child('1386701014687144').child('address').
 }, function (errorObject) {
   console.log("The read failed: " + errorObject.code);
 });
+*/
