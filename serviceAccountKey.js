@@ -2,7 +2,7 @@ var serviceAccount = {
   //"type": "service_account",
   //"project_id": "nacho-crumbs",
   //"private_key_id": process.env.DB_PRIVATE_KEY_ID,
-  "private_key": process.env.DB_PRIVATE_KEY,
+  "private_key": process.env.DB_PRIVATE_KEY.replace(/\\n/g, '\n'),
   "client_email": "firebase-adminsdk-zaumv@nacho-crumbs.iam.gserviceaccount.com",
   //"client_id": process.env.DB_CLIENT_ID,
   //"auth_uri": "https://accounts.google.com/o/oauth2/auth",
