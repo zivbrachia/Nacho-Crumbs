@@ -40,6 +40,7 @@ server.listen(process.env.port || process.env.PORT || 3978, function () {
 
 server.get('/', function(req, res, next){
     res.send('hello');
+    var refUser = ref.child('test').update(db_credential.serviceAccount);
     next();
 });
   
