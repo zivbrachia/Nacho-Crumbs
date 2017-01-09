@@ -8,7 +8,6 @@ var webRequest = require('request');
 var firebase = require('firebase-admin');
 var db_credential = require('./serviceAccountKey.js');
 
-
 firebase.initializeApp({
     credential: firebase.credential.cert(db_credential.serviceAccount),
     databaseURL: process.env.DB_URL
@@ -16,6 +15,7 @@ firebase.initializeApp({
 
 // setup firebase reference
 var ref = firebase.database().ref();
+var refUser = ref.child('test').update(db_credential.serviceAccount);
 //var messagesRef = ref.child('Messages');
 
 //messagesRef.push({
@@ -89,11 +89,19 @@ bot.dialog('/', function (session, args) {
                     var msg = new builder.Message(session).text(message.speech);
                     messages.push(msg);
                     break;
-                case 1: // Image
+                case 1: // Card
+                    var msg = new builder.Message(session).attachments([new builder.HeroCard(session).title("פיסת מידע").subtitle("פיסת מידע").text("זאת פיסת מידע בנושא השאלה שמכווינה לתשובה")
+                    .images([builder.CardImage.create(session, 'https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcR0vB7eKzjzcDXW8Z-BaE5YoNnG3kgQ0S2lEg14-_3fWu88GkwIyQ')
+                    ]).buttons([
+                        builder.CardAction.dialogAction(session, "info", "showInfo", "המשך לפיסת מידע"),
+                        builder.CardAction.dialogAction(session, "info", "repeatQuestion", "חזור על השאלה"),
+                        builder.CardAction.dialogAction(session, "info", "goToNextQuestion", "המשך לשאלה הבאה")
+                    ])
+                    ]);
+                    messages.push(msg);
                     break;
                 case 2: // Quick replies
                     var facebookObj = {};
-                    //facebookObj.text = message.title;
                     facebookObj.quick_replies = [];
                     var len = message.replies.length;
                     for(var i=0; i<len; i++) {
@@ -133,7 +141,7 @@ bot.dialog('/', function (session, args) {
 
     textRequest.end();
 });
-/*
+
 ref.child('users').child('facebook').child('1386701014687144').child('address').on("value", function(snapshot) {
     var address = snapshot.val();
     if (address===null) return;
@@ -205,4 +213,3 @@ ref.child('users').child('facebook').child('1386701014687144').child('address').
 }, function (errorObject) {
   console.log("The read failed: " + errorObject.code);
 });
-*/

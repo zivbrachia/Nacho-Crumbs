@@ -1,14 +1,13 @@
 var firebase = require('firebase-admin');
-var serviceAccount = "./serviceAccountKey.json"     // firebase credentials
 
 module.exports = {initializeApp,getRefRoot,createListener,updateUserProfile,updateUserAddress};
 
 function initializeApp() {
-    var serviceAccount = "./serviceAccountKey.json";
+    var db_credential = require('./serviceAccountKey.js');
 
     firebase.initializeApp({
-        credential: firebase.credential.cert(serviceAccount),
-        databaseURL: 'https://nacho-crumbs.firebaseio.com'
+        credential: firebase.credential.cert(db_credential.serviceAccount),
+        databaseURL: process.env.DB_URL
     });
     return firebase;    
 }
