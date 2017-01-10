@@ -2,13 +2,13 @@
 
 var restify = require('restify');
 var builder = require('botbuilder');
+var eventEmitter = require('events').EventEmitter;
 var apiai = require('apiai');
 var webRequest = require('request');
-//require('./config.js');
+require('./config.js');
 var firebase = require('firebase-admin');
 var db_credential = require('./serviceAccountKey.js');
 
-console.log(db_credential);
 firebase.initializeApp({
     credential: firebase.credential.cert(db_credential.serviceAccount),
     databaseURL: process.env.DB_URL
@@ -40,7 +40,7 @@ server.listen(process.env.port || process.env.PORT || 3978, function () {
 
 server.get('/', function(req, res, next){
     res.send('hello');
-    var refUser = ref.child('test').update(db_credential.serviceAccount);
+    var refUser = ref.child('test').update({"a":"a"});
     next();
 });
   
@@ -122,6 +122,12 @@ bot.dialog('/', function (session, args) {
                     
                     break;
                 case 3: // Card
+                    var msg = new builder.Message(session).attachments([
+                        new builder.ThumbnailCard(session).images([
+                            builder.CardImage.create(session, 'https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcR0vB7eKzjzcDXW8Z-BaE5YoNnG3kgQ0S2lEg14-_3fWu88GkwIyQ')
+                        ])
+                    ]);
+                    messages.push(msg);
                     break;
                 case 4: // Custom Payload
                     var msg = new builder.Message(session).sourceEvent(message.payload);
@@ -142,7 +148,7 @@ bot.dialog('/', function (session, args) {
 
     textRequest.end();
 });
-/*
+
 ref.child('users').child('facebook').child('1386701014687144').child('address').on("value", function(snapshot) {
     var address = snapshot.val();
     if (address===null) return;
