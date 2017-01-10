@@ -5,7 +5,7 @@ var builder = require('botbuilder');
 var eventEmitter = require('events').EventEmitter;
 var apiai = require('apiai');
 var webRequest = require('request');
-require('./config.js');
+//require('./config.js');
 var firebase = require('firebase-admin');
 var db_credential = require('./serviceAccountKey.js');
 

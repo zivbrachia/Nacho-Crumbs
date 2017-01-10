@@ -47,21 +47,21 @@ bot.dialog('/', function (session) {
     //apiai.eventRequest(INVOKE_EVENT, session);
 });
 //
-let userSays = 'שאלה2';
-let questionOutput = 'אורך גן שמקודד לחלבון שאורכו  30 חומצות אמיניות הוא לפחות:';
-let qId = 2
-let question = apiai.createIntentQuestion('Question_' + qId, 'Question_' + qId, 'QUESTION_' + qId, 'input.question_' + qId, questionOutput, userSays);
+let userSays = 'שאלה3';
+let questionOutput = 'מהן המילים החסרות בתרשים?';
+let qId = 3
+let question = apiai.createIntentQuestion('Question_' + qId, 'Question_' + qId, 'QUESTION_' + qId, 'input.question', questionOutput, userSays);
 let answerUserSays = '90 זוגות בסיסים';
 let answerOutput = 'תשובה נכונה';
-let answer = apiai.createIntentAnswer('Question_'+qId+'_Answer', 3, answerUserSays, 'Question_'+qId,'input.question_'+qId+'.answer', 'Question_'+qId, answerOutput);
+let answer = apiai.createIntentAnswer('Question_'+qId+'_Answer', 3, answerUserSays, 'Question_'+qId,'input.question.answer', 'Question_'+qId, answerOutput);
 let answerUserSays1 = '10 זוגות בסיסים';
 let answerUserSays2 = '30 זוגות בסיסים';
 let answerUserSays3 = '100 זוגות בסיסים';
-let wrong = apiai.createIntentWrong('Question_'+qId+'_Wrong', 1, answerUserSays1, 2, answerUserSays2, 4, answerUserSays3, 'Question_'+qId,'input.question_'+qId+'.wrong', 'Question_'+qId, 'טעות');
+let wrong = apiai.createIntentWrong('Question_'+qId+'_Wrong', 1, answerUserSays1, 2, answerUserSays2, 4, answerUserSays3, 'Question_'+qId,'input.question.wrong', 'Question_'+qId, 'טעות');
 answerOutput = "רמז לשאלה " + qId
-let clue = apiai.createIntentClue('Question_'+qId+'_Clue', 'Question_' + qId, 'Question_' + qId, 'input.question_1.clue', answerOutput);
+let clue = apiai.createIntentClue('Question_'+qId+'_Clue', 'Question_' + qId, 'Question_' + qId, 'input.question.clue', answerOutput);
 answerOutput = 'דלג לשאלה הבאה';
-let skip = apiai.createIntentSkip('Question_'+qId+'_Skip', 'Question_' + qId, 'Question_' + qId, 'input.question_1.skip', answerOutput);
+let skip = apiai.createIntentSkip('Question_'+qId+'_Skip', 'Question_' + qId, 'Question_' + qId, 'input.question.skip', answerOutput);
 
 let options = {};
 let client = apiai.createNewIntent(options);
