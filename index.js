@@ -5,7 +5,7 @@ var builder = require('botbuilder');
 var EventEmitter = require('events').EventEmitter;
 var apiai = require('apiai');
 var webRequest = require('request');
-require('./config.js');
+//require('./config.js');
 var firebase = require('firebase-admin');
 var db_credential = require('./serviceAccountKey.js');
 
@@ -127,7 +127,7 @@ dbEventEmitter.on('eventRequest', function (eventName, address) {
     });
     
     eventRequest.end();
-    }, process.env.TIMEOUT_QUESTION_MS, eventName, address);
+    }, process.env.TIMEOUT_QUESTION_MS || 3000, eventName, address);
     /*
     bot.isInConversation(address, function (err, lastAccess) {
         console.log('lastAccess: ' + lastAccess);
