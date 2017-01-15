@@ -11,7 +11,7 @@
   "license": "ISC",
   "dependencies": {
     "apiai": "^3.0.3",
-    "botbuilder": "^3.4.4",
+    "botbuilder": "^3.5.3",
     "enum": "^2.3.0",
     "events": "^1.1.1",
     "firebase-admin": "^4.0.4",

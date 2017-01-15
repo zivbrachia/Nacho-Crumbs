@@ -2,7 +2,7 @@ var apiai = require('apiai');
 var emum = require('enum');
 
 module.exports = {textRequest, eventRequest, getIntents, getIntentById, createNewIntent, 
-                  updateIntentById, deleteIntentById,
+                  updateIntentById, deleteIntentById, buildMessages,
                   createIntentQuestion, createIntentAnswer, createIntentWrong, createIntentClue, createIntentSkip};
 
 var app = apiai(process.env.APIAI_CLIENT_ACCESS_TOKEN);
@@ -162,8 +162,11 @@ function eventRequest(eventName, session) {
 
     request.on('response', function(response) {
         console.log(JSON.stringify(response));
-        messages = buildMessages(response.result.fulfillment.messages);
-        console.log(messages);
+        //
+        myEmitter.emit('apiai_response', session, response);
+        //
+        //messages = buildMessages(response.result.fulfillment.messages);
+        //console.log(messages);
 
     });
 
@@ -181,12 +184,15 @@ function textRequest(text, session) {
 
     request.on('response', function(response) {
         console.log(JSON.stringify(response));
-        messages = buildMessages(response.result.fulfillment.messages);
-        var len = messages.length;
-        for (var i=0; i<len; i++) {
-            var message = messages[i];
-            session.send(message);
-        }
+        //
+        myEmitter.emit('apiai_response', session, response);
+        //
+        //messages = buildMessages(response.result.fulfillment.messages);
+        //var len = messages.length;
+        //for (var i=0; i<len; i++) {
+        //    var message = messages[i];
+        //    session.send(message);
+        //}
     });
 
     request.on('error', function(error) {
@@ -271,5 +277,5 @@ function buildMessages(messages) { // messages is an array: response.result.fulf
                 break;
         }            
     }
-    return resultForSession;
+    return messagesResult;
 }
