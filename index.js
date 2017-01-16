@@ -91,6 +91,15 @@ intents.onDefault(function (session) {
     */
 });
 
+intents.matches(/^reset userData/i, function (session){
+     session.userData = {};
+     session.send("userData has been reset");
+});
+
+intents.matches(/^show userData/i, function (session){
+     session.send(JSON.stringify(session.userData));
+});
+
 intents.matches(/^hello/i, function (session){
      console.log('hello');
      console.log(session.userData.ziv);
@@ -139,7 +148,9 @@ apiaiEventEmitter.on('apiai_response', function (connObj, response, source) {
         let address = connObj;
         if (connObj.constructor.name=='Session') {
             address = connObj.message.address;
-            console.log("userData: " + connObj.userData.intent.event || "nothing");
+            if (connObj.userData.intent||'empty'!=='empty') {   // when userData.intent dont exists
+                console.log("userData: " + connObj.userData.intent.event || "nothing");
+            }
         }
         var messages = [];
         console.log("action: " + response.result.action);
@@ -251,6 +262,9 @@ function sendMessageBySession(message, response, session) {
 }
 
 function updateUserData(response, session) {
+    if (session.userData.intent||'empty'==='empty') {
+        session.userData.intent = {};    
+    }
     session.userData.intent.action = response.result.action;
     session.userData.intent.id = response.result.metadata.intentId;
     session.userData.intent.name = response.result.metadata.intentName;
