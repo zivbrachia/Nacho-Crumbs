@@ -11,6 +11,7 @@
   "license": "ISC",
   "dependencies": {
     "apiai": "^3.0.3",
+    "botanalytics-microsoftbotframework-middleware": "0.0.1",
     "botbuilder": "^3.5.3",
     "enum": "^2.3.0",
     "events": "^1.1.1",
