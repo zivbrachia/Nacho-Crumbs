@@ -64,7 +64,7 @@ function readAddresses(req, res, next, channelId, eventName) {
         Object.keys(users).forEach( function (user) {
             let address = users[user].address;
             if (address===undefined) return;
-            if (user!=='154226484') return;
+            //if (user!=='154226484') return;
             //
             let userData = users[user].userData;
             //
