@@ -116,6 +116,7 @@ server.post('/api/messages', connector.listen());
 var intents = new builder.IntentDialog();
 
 intents.onDefault(function (session) {
+    console.log('text: '+ session.message.text);
     console.log('typing...');
     session.sendTyping();
     //
@@ -148,7 +149,7 @@ intents.matches(/^show userData/i, function (session){
 });
 
 intents.matches(/^hello/i, function (session){
-     console.log('hello');
+     console.log('text: '+ session.message.text);
      console.log(session.userData.ziv);
      session.send("Hi there!");
 });
