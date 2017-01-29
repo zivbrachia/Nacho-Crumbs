@@ -1,14 +1,14 @@
 'use strict';
 
-var restify = require('restify');
-var builder = require('botbuilder');
-var EventEmitter = require('events').EventEmitter;
-var apiai = require('apiai');
-var webRequest = require('request');
+let restify = require('restify');
+let builder = require('botbuilder');
+let EventEmitter = require('events').EventEmitter;
+let apiai = require('apiai');
+let webRequest = require('request');
 //require('./config.js');
-var firebase = require('firebase-admin');
-var db_credential = require('./serviceAccountKey.js');
-var BotanalyticsMiddleware = require('botanalytics-microsoftbotframework-middleware').BotanalyticsMiddleware({
+let firebase = require('firebase-admin');
+let db_credential = require('./serviceAccountKey.js');
+let BotanalyticsMiddleware = require('botanalytics-microsoftbotframework-middleware').BotanalyticsMiddleware({
     token: process.env.BOTANALYTICS_TOKEN
 });
 
@@ -18,8 +18,8 @@ firebase.initializeApp({
 });
 
 // setup firebase reference
-var ref = firebase.database().ref();
-var questions = null;
+let ref = firebase.database().ref();
+let questions = null;
 ref.child('category').child('dna').once("value", function(snapshot) {
         questions = snapshot.val()
         //dbEventEmitter.emit('eventRequest', 'QUESTION_2', address, null, userData || {});    
@@ -27,13 +27,13 @@ ref.child('category').child('dna').once("value", function(snapshot) {
             console.log("The read failed: " + errorObject.code);
 });
 
-var app = apiai(process.env.APIAI_CLIENT_ACCESS_TOKEN);
+let app = apiai(process.env.APIAI_CLIENT_ACCESS_TOKEN);
 
 //=========================================================
 // Bot Setup
 //=========================================================
 // Setup Restify Server
-var server = restify.createServer();
+let server = restify.createServer();
 server.listen(process.env.port || process.env.PORT || 3978, function () {
    console.log('%s listening to %s', server.name, server.url); 
 });
@@ -43,17 +43,17 @@ server.get('/', function(req, res, next) {
     next();
 });
 
+server.get('/build', function(req, res, next) {
+    console.error("build");
+    getAllIntents();
+    res.send('build intent');
+    next();
+});
+
 server.get('/start/:channelId/:eventName', function(req, res, next) {
     console.error("test console error");
     readAddresses(req, res, next, req.params.channelId, req.params.eventName);
-    //getAllIntents();
 });
-
-//server.get('/start/facebook/:eventName', function(req, res, next) {
-//    console.error("test console error");
-//    readAddresses(req, res, next, 'facebook');
-    //getAllIntents();
-//});
 
 function readAddresses(req, res, next, channelId, eventName) {
     //ref.child('users').child(channelId).child('1386701014687144').child('address').once("value", function(snapshot) {
@@ -64,7 +64,7 @@ function readAddresses(req, res, next, channelId, eventName) {
         Object.keys(users).forEach( function (user) {
             let address = users[user].address;
             if (address===undefined) return;
-            //if (user!=='154226484') return;
+            if ((channelId==='telegram')&(user!=='154226484')) return;
             //
             let userData = users[user].userData;
             //
@@ -85,7 +85,7 @@ function readAddresses(req, res, next, channelId, eventName) {
         let userData = snapshot.val().userData;
         if (userData===null) return;
         ////////////////////////////////////////////////////
-        var eventName = req.params.eventName;//"QUESTION_2";
+        let eventName = req.params.eventName;//"QUESTION_2";
         dbEventEmitter.emit('eventRequest', eventName, address, null, userData);
         ////////////////////////////////////////////////////
         }, function (errorObject) {
@@ -95,12 +95,12 @@ function readAddresses(req, res, next, channelId, eventName) {
 }
   
 // Create chat bot
-var connector = new builder.ChatConnector({
+let connector = new builder.ChatConnector({
     appId: process.env.MICROSOFT_APP_ID,
     appPassword: process.env.MICROSOFT_APP_PASSWORD
 });
 //
-var bot = new builder.UniversalBot(connector);
+let bot = new builder.UniversalBot(connector);
 // Use the middleware
 bot.use({
     receive: BotanalyticsMiddleware.receive,
@@ -113,14 +113,14 @@ server.post('/api/messages', connector.listen());
 //=========================================================
 // Bots Dialogs
 //=========================================================
-var intents = new builder.IntentDialog();
+let intents = new builder.IntentDialog();
 
 intents.onDefault(function (session) {
     console.log('text: '+ session.message.text);
     console.log('typing...');
     session.sendTyping();
     //
-    var textRequest = app.textRequest(session.message.text, {
+    let textRequest = app.textRequest(session.message.text, {
         sessionId: session.message.address.user.id
     });
     textRequest.on('response', function(response) {
@@ -129,7 +129,6 @@ intents.onDefault(function (session) {
     textRequest.on('error', function(error) {
         console.log("error: " + JSON.stringify(error));
     });
-    //textRequest.end();
     //
     if ((session.message.address.channelId === 'facebook') & (session.userData.user_profile || 'empty'==='empty')) {
         userProfileEventEmitter.emit('facebook_user_profile', session, textRequest);
@@ -137,6 +136,10 @@ intents.onDefault(function (session) {
         textRequest.end();
     }
     
+    if (!session.userData.address) {
+        let refUser = ref.child('users').child(session.message.address.channelId).child(session.message.address.user.id).child('address').update(session.message.address);
+        session.userData.address = true;
+    }
 });
 
 intents.matches(/^reset userData/i, function (session){
@@ -151,7 +154,17 @@ intents.matches(/^show userData/i, function (session){
 intents.matches(/^hello/i, function (session){
      console.log('text: '+ session.message.text);
      console.log(session.userData.ziv);
-     session.send("Hi there!");
+     session.send("Hi there");
+     //https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=iw&dt=t&q=Neta
+     webRequest('https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=iw&dt=t&q=Brachia', function (error, response, body) {
+        if (!error && response.statusCode == 200) {
+            let result = body.split('"');
+            console.log('user_name_translated to: ' + result[1]);
+            session.send('How do you do, ' + result[1])
+            //session.userData.user_profile = user_profile;
+            //let refUser = ref.child('users').child(session.message.address.channelId).child(session.message.address.user.id).child('userData').child('user_profile').update(user_profile);
+        }
+    });
 });
 
 bot.dialog('/', intents);
@@ -167,7 +180,40 @@ userProfileEventEmitter.on('facebook_user_profile', function(session, request) {
             let user_profile = JSON.parse(body);
             console.log('user_profile: ' + user_profile);
             session.userData.user_profile = user_profile;
-            let refUser = ref.child('users').child(session.message.address.channelId).child(session.message.address.user.id).child('userData').child('user_profile').update(user_profile);
+            //
+            let refUser = ref.child('users').child(session.message.address.channelId).child(session.message.address.user.id).child('userData').child('user_profile');
+            /*
+            refUser.on('child_added', function (snapshot, prevChildKey) {
+                if (snapshot.key==='first_name') {
+                    webRequest('https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=iw&dt=t&q='+snapshot.val(), function (error, response, body) {
+                        if (!error && response.statusCode == 200) {
+                            //let user_profile = JSON.parse(body);
+                            let first_name = body.split('"')[1];
+                            console.log('first_name: ' + first_name);
+                            session.userData.user_profile.first_name = first_name;
+                            let refUser = ref.child('users').child(session.message.address.channelId).child(session.message.address.user.id).child('userData').child('user_profile').update(
+                                {first_name: session.userData.user_profile.first_name}
+                            );
+                        }
+                    });
+                }
+                if (snapshot.key==='last_name') {
+                    webRequest('https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=iw&dt=t&q='+snapshot.val(), function (error, response, body) {
+                        if (!error && response.statusCode == 200) {
+                            //let user_profile = JSON.parse(body);
+                            let last_name = body.split('"')[1];
+                            console.log('last_name: ' + last_name);
+                            //session.userData.user_profile.last_name = last_name;
+                            let refUser = ref.child('users').child(session.message.address.channelId).child(session.message.address.user.id).child('userData').child('user_profile').update(
+                                {last_name: last_name}
+                            );
+                        }
+                    });
+                }
+            });
+            */
+            //let refUser = ref.child('users').child(session.message.address.channelId).child(session.message.address.user.id).child('userData').child('user_profile').update(user_profile);
+            refUser.update(user_profile);
         }
     });
 
@@ -180,7 +226,8 @@ dbEventEmitter.on('eventRequest', function (eventName, address, timeout, userDat
             name : eventName,
             data: {
                 address: address,
-                userData: userData
+                userData: userData,
+                //first_name: userData.user_profile.first_name || ''
             }
         };
 
@@ -209,8 +256,239 @@ dbEventEmitter.on('eventRequest', function (eventName, address, timeout, userDat
     */
 });
 
+function chatFlow(connObj, response, userData, source) {
+    let intentAction = response.result.action;
+    //
+    let actionsReplyByGender = ['input.right', 'input.wrong'];
+    let actionsMetaQuestion = ['input.metaQuestion'];
+    let actionsSendingNextQuestion = ['input.skip', 'input.next'];
+    let actionsReturnQuestion = ['input.return_question'];  //, 'input.clue', 'input.hint'];
+    let actionsStop = ['input.break_setting'];
+    //
+    let address = connObj;
+    if (connObj.constructor.name=='Session') {
+        address = connObj.message.address;
+        /*
+        if (connObj.userData || 'empty'==='empty') {
+            connObj.userData = userData;
+        } else if (connObj.userData.user_profile || 'empty'==='empty') {
+            connObj.userData.user_profile = userData.user_profile;
+        }
+        if (connObj.userData.intent||'empty'!=='empty') {   // when userData.intent dont exists
+            console.log("userData: " + connObj.userData.intent.event || 'empty');
+        }
+        */
+    }
+    //
+    if (actionsReplyByGender.indexOf(intentAction)>=0) {
+        // go to reply by gender
+        // always connObj will be 'Session' object, cannot answer questions with proactive that connObj is 'Address' object
+        replyByGender(intentAction, connObj.userData, address)
+        // there is no reason to continue the function and send messages because there is none...
+        return;
+    } else if (actionsMetaQuestion.indexOf(intentAction)>=0) {
+        // always connObj will be 'Session' object, cannot ask metaQuestions with proactive that connObj is 'Address' object
+        inputMetaQuestion(response, connObj)
+    } else if (actionsStop.indexOf(intentAction)>=0) {
+        console.log('***');
+    } else if (actionsReturnQuestion.indexOf(intentAction)>=0) {
+        sendLastQuestion(response, connObj, userData || {});
+    }
+    //
+    let messages = buildMessages(response, address, source);
+    sendMessages(response, connObj, messages, userData || {});
+
+    if (actionsSendingNextQuestion.indexOf(intentAction)>=0) {
+        sendNextQuestion(response, address, userData || {});
+    }
+}
+
+function replyByGender(intentAction, userData, address) {  // question reply (right/wrong)
+    let eventName = null;
+    switch(intentAction) {
+        case 'input.right':
+            eventName = 'RIGHT_ANSWER_REPLY_FEMALE';
+            if ((userData.user_profile || 'empty'==='empty')||(userData.user_profile.gender==='male')) {
+                eventName = 'RIGHT_ANSWER_REPLY_MALE';
+            }
+            break;
+        case 'input.wrong':
+            eventName = 'WRONG_ANSWER_REPLY_FEMALE';
+            if ((userData.user_profile || 'empty'==='empty')||(userData.user_profile.gender==='male')) {
+                eventName = 'WRONG_ANSWER_REPLY_MALE';
+            }
+            break;
+        default:
+            eventName = null;
+            break;
+    }
+    //
+    if (eventName!==null) {
+        dbEventEmitter.emit('eventRequest', eventName, address, process.env.TIMEOUT_REPLY, userData || {});
+    }
+}
+
+function buildMessages(response, address, source) {
+    let len = response.result.fulfillment.messages.length;
+    let textResponseToQuickReplies = '';
+    let messages = [];
+    for (let i=0; i<(len); i++) {
+        let message = response.result.fulfillment.messages[i];
+        let msg = {};
+        console.log("message type: " + message.type + " " + source);
+        switch(message.type) {
+            case 0: // Text response
+                if (message.speech.indexOf('[>>]') !== (-1)) {
+                        textResponseToQuickReplies = message.speech.split('[>>]')[0];
+                        break;
+                }
+                if (address.channelId==='telegram') {
+                    msg = new builder.Message().address(address).sourceEvent({
+                        telegram:{
+                            method: 'sendMessage',
+                            parameters: {
+                                text: message.speech,
+                                parse_mode: 'Markdown',
+                                reply_markup: {
+                                    hide_keyboard: true
+                                }
+                            }
+                        }
+                    });
+                    messages.push(msg);
+                }
+                else if (address.channelId==='facebook') {
+                    let text = message.speech.replace(/\n/g, '\n\r');
+                    msg = new builder.Message().address(address).text((response.result.action=="input.question")? ("שאלה:" + " " + text):(text));
+                    messages.push(msg);
+                }
+                break;
+            case 1: // Card
+                /*
+                let msg = new builder.Message(session).address(session.address).attachments([new builder.HeroCard(session).title("פיסת מידע").subtitle("פיסת מידע").text("זאת פיסת מידע בנושא השאלה שמכווינה לתשובה")
+                .images([builder.CardImage.create(session, 'https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcR0vB7eKzjzcDXW8Z-BaE5YoNnG3kgQ0S2lEg14-_3fWu88GkwIyQ')
+                ]).buttons([
+                    builder.CardAction.dialogAction(session, "info", "showInfo", "המשך לפיסת מידע"),
+                    builder.CardAction.dialogAction(session, "info", "repeatQuestion", "חזור על השאלה"),
+                    builder.CardAction.dialogAction(session, "info", "goToNextQuestion", "המשך לשאלה הבאה")
+                ])
+                ]);
+                messages.push(msg);
+                */
+                break;
+            case 2: // Quick replies
+                if (address.channelId==='facebook') {
+                    let facebookObj = {};
+                    facebookObj.facebook = {};
+                    facebookObj.facebook['text'] = (response.result.action=="input.question")? ("שאלה:" + " " + message.title):(message.title);
+                    if (message.title.indexOf('[>>]') !== (-1)) {
+                        facebookObj.facebook['text'] = textResponseToQuickReplies.replace(/\n/g, '\n\r');
+                    }
+                    facebookObj.facebook.quick_replies = [];
+                    let len = message.replies.length;
+                    for(let i=0; i<len; i++) {
+                        let quick_reply = {};
+                        quick_reply.content_type = "text";
+                        quick_reply.title = message.replies[i];
+                        quick_reply.payload = message.replies[i]; //"SOMETHING_SOMETHING";
+                        facebookObj.facebook.quick_replies.push(quick_reply);
+                    }
+                    
+                    if (response.result.action=="input.question") {
+                        let addQuickReplies = ['רמז', 'דלג'];
+                        len = addQuickReplies.length;
+                        for(let i=0; i<len; i++) {
+                            let quick_reply = {};
+                            quick_reply.content_type = "text";
+                            quick_reply.title = addQuickReplies[i];
+                            quick_reply.payload = addQuickReplies[i]; //"SOMETHING_SOMETHING";
+                            facebookObj.facebook.quick_replies.push(quick_reply);
+                        }
+                    }
+                    
+                    msg = new builder.Message().address(address).sourceEvent(facebookObj);
+                    messages.push(msg);
+
+                } else if (address.channelId==='telegram') {
+                    let len = message.replies.length;
+                    if (message.title.indexOf('[>>]') !== (-1)) {
+                        if (textResponseToQuickReplies === '') {
+                            break;
+                        } else {
+                            message.title = textResponseToQuickReplies;
+                        }
+                    }
+                    //let quick_reply = [];
+                    //let actions = [];
+                    let reply_markup = [];
+                    for(let i=0; i<len; i++) {
+                        //quick_reply.push(message.replies[i]);
+                        //actions.push(new builder.CardAction().title(message.replies[i]).value(message.replies[i]));
+                        reply_markup.push([{text: message.replies[i]}]);
+                    }
+                    /////////////////////
+                    //let keyboard = new builder.Keyboard().buttons(actions);
+                    //let msg = new builder.Message().address(address).text(message.title).attachments([keyboard]); buttons
+                    msg = new builder.Message().address(address).sourceEvent({
+                        telegram:{
+                            method: 'sendMessage',
+                            parameters: {
+                                text: message.title,
+                                parse_mode: 'Markdown',
+                                reply_markup: {
+                                    //hide_keyboard: true
+                                    keyboard:
+                                    //[
+                                        reply_markup
+                                        
+                                    //]
+                                }
+                            }
+                        }
+                    });
+                    
+                    /////////////////////
+                    messages.push(msg);
+                }
+                //
+                //messages.push(msg);
+                break;
+            case 3: // Card
+                msg = new builder.Message().address(address)
+                    .attachments([{
+                        contentType: "image/jpeg",
+                        contentUrl: 'https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcR0vB7eKzjzcDXW8Z-BaE5YoNnG3kgQ0S2lEg14-_3fWu88GkwIyQ'
+                }]);
+                messages.push(msg);
+                break;
+            case 4: // Custom Payload
+                let payload = message.payload;
+                /*if (response.result.action=="input.clue") {
+                    let addQuickReplies = ['רמז נוסף', 'חזור לשאלה', 'דלג'];
+                    payload.facebook.quick_replies = [];
+                    len = addQuickReplies.length;
+                    for(let i=0; i<len; i++) {
+                        let quick_reply = {};
+                        quick_reply.content_type = "text";
+                        quick_reply.title = addQuickReplies[i];
+                        quick_reply.payload = addQuickReplies[i]; //"SOMETHING_SOMETHING";
+                        payload.facebook.quick_replies.push(quick_reply);
+                    }
+                }
+                */
+                msg = new builder.Message().address(address).sourceEvent(payload);
+                messages.push(msg);
+                break;
+        }
+    }
+    return messages;
+}
+
 apiaiEventEmitter.on('apiai_response', function (connObj, response, userData, source) {
+        chatFlow(connObj, response, userData, source)
+        return;
         // connObj = session/address, response = from api.ai, userData = mainly if address sent, source = for debug
+        /*
         let address = connObj;
         if (connObj.constructor.name=='Session') {
             address = connObj.message.address;
@@ -220,10 +498,10 @@ apiaiEventEmitter.on('apiai_response', function (connObj, response, userData, so
                 connObj.userData.user_profile = userData.user_profile;
             }
             if (connObj.userData.intent||'empty'!=='empty') {   // when userData.intent dont exists
-                console.log("userData: " + connObj.userData.intent.event || 'empty');
+                console.log("userData: " + connObj.userData.event || 'empty');
             }
         }
-        var messages = [];
+        let messages = [];
         console.log("action: " + response.result.action);
         //
         let eventName = null;
@@ -249,14 +527,20 @@ apiaiEventEmitter.on('apiai_response', function (connObj, response, userData, so
             return;
         }
         //
-        var len = response.result.fulfillment.messages.length;
-        for (var i=0; i<(len); i++) {
-            var message = response.result.fulfillment.messages[i];
+        let len = response.result.fulfillment.messages.length;
+        let textResponseToQuickReplies = '';
+        for (let i=0; i<(len); i++) {
+            let message = response.result.fulfillment.messages[i];
+            let msg = {};
             console.log("message type: " + message.type + " " + source);
             switch(message.type) {
                 case 0: // Text response
+                    if (message.speech.indexOf('[>>]') !== (-1)) {
+                            textResponseToQuickReplies = message.speech.split('[>>]')[0];
+                            break;
+                    }
                     if (address.channelId==='telegram') {
-                        var msg = new builder.Message().address(address).sourceEvent({
+                        msg = new builder.Message().address(address).sourceEvent({
                             telegram:{
                                 method: 'sendMessage',
                                 parameters: {
@@ -270,14 +554,15 @@ apiaiEventEmitter.on('apiai_response', function (connObj, response, userData, so
                         });
                         messages.push(msg);
                     }
-                    else {
-                        var msg = new builder.Message().address(address).text((response.result.action=="input.question")? ("שאלה:" + " " + message.speech):(message.speech));
+                    else if (address.channelId==='facebook') {
+                        let text = message.speech.replace(/\n/g, '\n\r');
+                        msg = new builder.Message().address(address).text((response.result.action=="input.question")? ("שאלה:" + " " + text):(text));
                         messages.push(msg);
                     }
                     break;
                 case 1: // Card
                     /*
-                    var msg = new builder.Message(session).address(session.address).attachments([new builder.HeroCard(session).title("פיסת מידע").subtitle("פיסת מידע").text("זאת פיסת מידע בנושא השאלה שמכווינה לתשובה")
+                    let msg = new builder.Message(session).address(session.address).attachments([new builder.HeroCard(session).title("פיסת מידע").subtitle("פיסת מידע").text("זאת פיסת מידע בנושא השאלה שמכווינה לתשובה")
                     .images([builder.CardImage.create(session, 'https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcR0vB7eKzjzcDXW8Z-BaE5YoNnG3kgQ0S2lEg14-_3fWu88GkwIyQ')
                     ]).buttons([
                         builder.CardAction.dialogAction(session, "info", "showInfo", "המשך לפיסת מידע"),
@@ -286,28 +571,38 @@ apiaiEventEmitter.on('apiai_response', function (connObj, response, userData, so
                     ])
                     ]);
                     messages.push(msg);
-                    */
+                    *//*
                     break;
                 case 2: // Quick replies
                     if (address.channelId==='facebook') {
-                        var facebookObj = {};
+                        let facebookObj = {};
                         facebookObj.facebook = {};
                         facebookObj.facebook['text'] = (response.result.action=="input.question")? ("שאלה:" + " " + message.title):(message.title);
+                        if (message.title.indexOf('[>>]') !== (-1)) {
+                            facebookObj.facebook['text'] = textResponseToQuickReplies.replace(/\n/g, '\n\r');
+                        }
                         facebookObj.facebook.quick_replies = [];
-                        var len = message.replies.length;
-                        for(var i=0; i<len; i++) {
-                            var quick_reply = {};
+                        let len = message.replies.length;
+                        for(let i=0; i<len; i++) {
+                            let quick_reply = {};
                             quick_reply.content_type = "text";
                             quick_reply.title = message.replies[i];
                             quick_reply.payload = message.replies[i]; //"SOMETHING_SOMETHING";
                             facebookObj.facebook.quick_replies.push(quick_reply);
                         } 
                         
-                        var msg = new builder.Message().address(address).sourceEvent(facebookObj);
+                        msg = new builder.Message().address(address).sourceEvent(facebookObj);
                         messages.push(msg);
 
                     } else if (address.channelId==='telegram') {
                         let len = message.replies.length;
+                        if (message.title.indexOf('[>>]') !== (-1)) {
+                            if (textResponseToQuickReplies === '') {
+                                break;
+                            } else {
+                                message.title = textResponseToQuickReplies;
+                            }
+                        }
                         //let quick_reply = [];
                         //let actions = [];
                         let reply_markup = [];
@@ -317,9 +612,9 @@ apiaiEventEmitter.on('apiai_response', function (connObj, response, userData, so
                             reply_markup.push([{text: message.replies[i]}]);
                         }
                         /////////////////////
-                        //var keyboard = new builder.Keyboard().buttons(actions);
-                        //var msg = new builder.Message().address(address).text(message.title).attachments([keyboard]); buttons
-                        var msg = new builder.Message().address(address).sourceEvent({
+                        //let keyboard = new builder.Keyboard().buttons(actions);
+                        //let msg = new builder.Message().address(address).text(message.title).attachments([keyboard]); buttons
+                        msg = new builder.Message().address(address).sourceEvent({
                             telegram:{
                                 method: 'sendMessage',
                                 parameters: {
@@ -344,7 +639,7 @@ apiaiEventEmitter.on('apiai_response', function (connObj, response, userData, so
                     //messages.push(msg);
                     break;
                 case 3: // Card
-                    var msg = new builder.Message().address(address)
+                    msg = new builder.Message().address(address)
                         .attachments([{
                             contentType: "image/jpeg",
                             contentUrl: 'https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcR0vB7eKzjzcDXW8Z-BaE5YoNnG3kgQ0S2lEg14-_3fWu88GkwIyQ'
@@ -352,7 +647,7 @@ apiaiEventEmitter.on('apiai_response', function (connObj, response, userData, so
                     messages.push(msg);
                     break;
                 case 4: // Custom Payload
-                    var msg = new builder.Message().address(address).sourceEvent(message.payload);
+                    msg = new builder.Message().address(address).sourceEvent(message.payload);
                     messages.push(msg);
                     break;
             }
@@ -361,7 +656,7 @@ apiaiEventEmitter.on('apiai_response', function (connObj, response, userData, so
         sendMessages(response, connObj, messages, userData || {});
         inputMetaQuestion(response, connObj);
         sendNextQuestion(response, address, userData || {});
-        
+      */  
 });
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 function sendMessages(response, session, messages, userData) {
@@ -402,7 +697,8 @@ function updateUserDataIntent(message, response) {
     message.userData.intent.name = response.result.metadata.intentName;
     //
     if ((response.result.action=='input.question')&(response.result.resolvedQuery.indexOf('QUESTION_') !== (-1))) {
-        message.userData.intent.event = response.result.resolvedQuery;
+        let eventName = response.result.resolvedQuery;
+        message.userData.event = eventName;
     }
 }
 
@@ -424,38 +720,33 @@ function updateUserData(response, session) {
     session.userData.intent.name = response.result.metadata.intentName;
     //
     if ((response.result.action=='input.question')&(response.result.resolvedQuery.indexOf('QUESTION_') !== (-1))) {
-        session.userData.intent.event = response.result.resolvedQuery;
+        let eventName = response.result.resolvedQuery;
+        session.userData.event = eventName;
     }
     //
-    let parameterName = response.result.action.split('.')[1];   // input.[paramet_name]
-    //var setOrNot = typeof variable !== typeof undefined ? true : false;
-    if (typeof session.userData.user_profile === typeof undefined) {
-        session.userData.user_profile = {};    
-    }
-    console.log('session.userData.user_profile: ' + session.userData.user_profile);
-    session.userData.user_profile[parameterName] = response.result.parameters[parameterName];
-    console.log('session.userData.user_profile: ' + session.userData.user_profile);
+    //let parameterName = response.result.action.split('.')[1];   // input.[paramet_name]
+    //if (typeof session.userData.user_profile === typeof undefined) {
+    //    session.userData.user_profile = {};    
+    //}
+    //console.log('session.userData.user_profile: ' + session.userData.user_profile);
+    //session.userData.user_profile[parameterName] = response.result.parameters[parameterName];
+    //console.log('session.userData.user_profile: ' + session.userData.user_profile);
 }
 
 function writeCurrentUserData(session, userData) {
     if (session.constructor.name=='Session') {
         let refUser = ref.child('users').child(session.message.address.channelId).child(session.message.address.user.id).child('userData').update(userData);
-        refUser = ref.child('users').child(session.message.address.channelId).child(session.message.address.user.id).child('address').update(session.message.address); // TO DO
-        if (userData.intent.event || 'empty'!=='empty') {
-            refUser = ref.child('users').child(session.message.address.channelId).child(session.message.address.user.id).child('event').update({name: userData.intent.event});
-        }
     } else {
         let refUser = ref.child('users').child(session.channelId).child(session.user.id).child('userData').update(userData);
-        refUser = ref.child('users').child(session.channelId).child(session.user.id).child('address').update(session);  // TO DO
-        if (userData.intent.event || 'empty'!=='empty') {
-            refUser = ref.child('users').child(session.channelId).child(session.user.id).child('event').update({name: userData.intent.event});
-        }
     }
-    
+}
+
+function sendLastQuestion(response, connObj, userData) {
+    dbEventEmitter.emit('eventRequest', userData.event, address, null, userData || {});
 }
 
 function sendNextQuestion(response, address, userData) {
-    let actionsForSending = ['input.skip', 'output.wrong_reply', 'output.right.reply'];
+    let actionsForSending = ['input.skip', 'input.next'];
     if (actionsForSending.indexOf(response.result.action)>=0) {
         lotteryQuestion(address, userData);
     }
@@ -470,16 +761,18 @@ function lotteryQuestion(address, userData) {
     let subCategory = objKeys[Math.floor(Math.random() * subCategoryLen)];
     let objkeys1 = Object.keys(questions[subCategory]);
     let questionLen = objkeys1.length;
-    let intent = objkeys1[Math.floor(Math.random() * subCategoryLen)];
+    let intent = objkeys1[Math.floor(Math.random() * questionLen)];
     let eventName = questions[subCategory][intent].events[0].name
     console.log(eventName);
+    //eventName = "QUESTION_7";
+    userData.event = eventName;
     dbEventEmitter.emit('eventRequest', eventName, address, null, userData || {});    
     
 }
 
 function inputMetaQuestion(response, session) {
     if (response.result.action=='input.metaQuestion') {
-        if (!session.userData.intent.event) {
+        if (!session.userData.event) {
             readCurrentIntent(session);
         } else {
             //dbEventEmitter.emit('eventRequest', session.userData.intent.event, address);
@@ -489,9 +782,9 @@ function inputMetaQuestion(response, session) {
 }
 
 function eventRequestEmit(session) {
-    console.log('session.userData.intent.event:' + session.userData.intent.event || '');
+    console.log('session.userData.event:' + session.userData.event || '');
     //console.log(userData || '');
-    dbEventEmitter.emit('eventRequest', session.userData.intent.event || '', session.message.address, null/*, userData || {}*/);
+    dbEventEmitter.emit('eventRequest', session.userData.event || '', session.message.address, null/*, userData || {}*/);
 }
 
 function readCurrentIntent(session) {
@@ -500,7 +793,7 @@ function readCurrentIntent(session) {
         if (user.userData.intent===null) return;
         ////////////////////////////////////////////////////
         let eventName = user.event;
-        session.userData.intent.event = eventName;
+        session.userData.event = eventName;
         //dbEventEmitter.emit('eventRequest', connObj.userData.intent.event, address);
         eventRequestEmit(session);
         ////////////////////////////////////////////////////
@@ -510,10 +803,10 @@ function readCurrentIntent(session) {
 }
 
 function getAllIntents(){
-    var client = require('restify').createJsonClient({
+    let client = require('restify').createJsonClient({
         url: 'https://api.api.ai/v1/intents'
     });
-    var options = {};
+    let options = {};
     options.headers = {};
     options.headers.Authorization = process.env.APIAI_AUTHORIZATION;
 
@@ -569,3 +862,5 @@ function buildIntexCatalog(intent) {
     }
     return temp;
 }
+
+
