@@ -16,6 +16,7 @@
     "enum": "^2.3.0",
     "events": "^1.1.1",
     "firebase-admin": "^4.0.4",
+    "node-schedule": "^1.2.0",
     "request": "^2.79.0",
     "restify": "^4.3.0"
   },

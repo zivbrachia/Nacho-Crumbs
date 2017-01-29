@@ -5,6 +5,7 @@ let builder = require('botbuilder');
 let EventEmitter = require('events').EventEmitter;
 let apiai = require('apiai');
 let webRequest = require('request');
+var schedule = require('node-schedule');
 //require('./config.js');
 let firebase = require('firebase-admin');
 let db_credential = require('./serviceAccountKey.js');
@@ -225,9 +226,9 @@ dbEventEmitter.on('eventRequest', function (eventName, address, timeout, userDat
         let event = {
             name : eventName,
             data: {
-                address: address,
-                userData: userData,
-                //first_name: userData.user_profile.first_name || ''
+                address: JSON.stringify(address),
+                userData: JSON.stringify(userData),
+                first_name: userData.user_profile.first_name
             }
         };
 
@@ -238,8 +239,8 @@ dbEventEmitter.on('eventRequest', function (eventName, address, timeout, userDat
     let eventRequest = app.eventRequest(event, options);
 
     eventRequest.on('response', function(response) {
-        let address = response.result.parameters.address;
-        let userData = response.result.parameters.userData;
+        let address = JSON.parse(response.result.parameters.address);
+        let userData = JSON.parse(response.result.parameters.userData);
         apiaiEventEmitter.emit('apiai_response', address, response, userData || {}, "eventRequest");
     });
 
@@ -290,7 +291,21 @@ function chatFlow(connObj, response, userData, source) {
         // always connObj will be 'Session' object, cannot ask metaQuestions with proactive that connObj is 'Address' object
         inputMetaQuestion(response, connObj)
     } else if (actionsStop.indexOf(intentAction)>=0) {
-        console.log('***');
+        let date = new Date();
+        if (response.result.parameters.duration) {
+            switch(response.result.parameters.duration.unit) {
+                case 'sec':
+                    date.setSeconds(date.getSeconds() + response.result.parameters.duration.amount);
+                break;
+                default:
+                    date.setSeconds(date.getSeconds() + 60);
+                break;
+            }    
+        }
+        let j = schedule.scheduleJob(date, function(){
+            connObj.send("היי.... חזרתי");
+            lotteryQuestion(connObj.message.address, connObj.userData);
+        }.bind(null, connObj));
     } else if (actionsReturnQuestion.indexOf(intentAction)>=0) {
         sendLastQuestion(response, connObj, userData || {});
     }
@@ -742,7 +757,7 @@ function writeCurrentUserData(session, userData) {
 }
 
 function sendLastQuestion(response, connObj, userData) {
-    dbEventEmitter.emit('eventRequest', userData.event, address, null, userData || {});
+    dbEventEmitter.emit('eventRequest', userData.event, connObj.message.address, null, userData || {});
 }
 
 function sendNextQuestion(response, address, userData) {
@@ -862,5 +877,3 @@ function buildIntexCatalog(intent) {
     }
     return temp;
 }
-
-
