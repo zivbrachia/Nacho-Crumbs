@@ -443,7 +443,7 @@ function buildMessages(response, address, source) {
                         quick_reply.payload = message.replies[i]; //"SOMETHING_SOMETHING";
                         facebookObj.facebook.quick_replies.push(quick_reply);
                     }
-                    
+                    /*
                     if (response.result.action=="input.question") {
                         let addQuickReplies = ['רמז', 'דלג'];
                         len = addQuickReplies.length;
@@ -455,7 +455,7 @@ function buildMessages(response, address, source) {
                             facebookObj.facebook.quick_replies.push(quick_reply);
                         }
                     }
-                    
+                    */
                     msg = new builder.Message().address(address).sourceEvent(facebookObj);
                     messages.push(msg);
 
@@ -746,8 +746,8 @@ function updateUserDataIntent(message, response) {
     message.userData.intent.id = response.result.metadata.intentId;
     message.userData.intent.name = response.result.metadata.intentName;
     //
-    if ((response.result.action=='input.question')&(response.result.resolvedQuery.indexOf('QUESTION_') !== (-1))) {
-        let eventName = response.result.resolvedQuery;
+    if ((response.result.action=='input.question')&(response.result.metadata.intentName.indexOf(process.env.APIAI_QUESTION_TEMPLATE) !== (-1))) {
+        let eventName = response.result.metadata.intentName;
         message.userData.event = eventName;
     }
 }
@@ -769,8 +769,8 @@ function updateUserData(response, session) {
     session.userData.intent.id = response.result.metadata.intentId;
     session.userData.intent.name = response.result.metadata.intentName;
     //
-    if ((response.result.action=='input.question')&(response.result.resolvedQuery.indexOf('QUESTION_') !== (-1))) {
-        let eventName = response.result.resolvedQuery;
+    if ((response.result.action=='input.question')&(response.result.metadata.intentName.indexOf(process.env.APIAI_QUESTION_TEMPLATE) !== (-1))) {
+        let eventName = response.result.metadata.intentName;
         session.userData.event = eventName;
     }
     //
