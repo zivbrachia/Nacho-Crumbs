@@ -340,6 +340,7 @@ function chatFlow(connObj, response, userData, source) {
         }.bind(null, connObj));
     } else if (actionsReturnQuestion.indexOf(intentAction)>=0) {
         sendLastQuestion(response, connObj, userData || {});
+        return;
     }
     //
     
