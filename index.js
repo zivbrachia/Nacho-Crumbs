@@ -69,7 +69,7 @@ function readAddresses(req, res, next, channelId, eventName) {
             //
             let userData = users[user].userData;
             //
-            dbEventEmitter.emit('eventRequest', eventName, address, null, userData);
+            dbEventEmitter.emit('eventRequest', eventName, address, null, userData, false);
         }, this);
         next();
         ////////////////////////////////////////////////////
@@ -117,24 +117,32 @@ server.post('/api/messages', connector.listen());
 let intents = new builder.IntentDialog();
 
 intents.onDefault(function (session) {
-    console.log('text: '+ session.message.text);
+    let now = new Date();
+    console.log(now.toTimeString() +'text: '+ session.message.text);
     console.log('typing...');
     session.sendTyping();
     //
-    let textRequest = app.textRequest(session.message.text, {
-        sessionId: session.message.address.user.id
-    });
-    textRequest.on('response', function(response) {
-        apiaiEventEmitter.emit('apiai_response', session, response, session.userData || {}, "textRequest");
-    });
-    textRequest.on('error', function(error) {
-        console.log("error: " + JSON.stringify(error));
-    });
+    
+    let lastSendTime = new Date(session.userData.lastSendTime || now);
+    console.log('lastSendTime: ' + lastSendTime.toTimeString());
+    lastSendTime.setMinutes(lastSendTime.getMinutes() + parseInt(process.env.APIAI_SESSION_TIMEOUT));
+    console.log('lastSendTime: ' + lastSendTime.toTimeString());
+    //
+    let textRequest = null;
+    if (lastSendTime.getTime() < now.getTime()) {
+        let eventName = session.userData.intent.name;
+        dbEventEmitter.emit('eventRequest', eventName, session.message.address, 0, session.userData, session); // first revoke the user session
+        //textRequest = setTextRequest(session);                                                          // second send the last user text
+    } else {
+        textRequest = setTextRequest(session);
+    }
     //
     if ((session.message.address.channelId === 'facebook') & (session.userData.user_profile || 'empty'==='empty')) {
         userProfileEventEmitter.emit('facebook_user_profile', session, textRequest);
     } else {
-        textRequest.end();
+        if (textRequest!==null) {
+            textRequest.end();
+        }
     }
     
     if (!session.userData.address) {
@@ -142,6 +150,24 @@ intents.onDefault(function (session) {
         session.userData.address = true;
     }
 });
+
+function setTextRequest(session) {
+    let textRequest = app.textRequest(session.message.text, {
+        sessionId: session.message.address.user.id
+    });
+
+    textRequest.on('response', function(response) {
+        session.userData.lastSendTime = session.lastSendTime;   // the request has made and we can update the send time
+        //
+        apiaiEventEmitter.emit('apiai_response', session, response, session.userData || {}, "textRequest");
+    });
+
+    textRequest.on('error', function(error) {
+        console.log("error: " + JSON.stringify(error));
+    });
+
+    return textRequest;
+}
 
 intents.matches(/^reset userData/i, function (session){
      session.userData = {};
@@ -221,17 +247,22 @@ userProfileEventEmitter.on('facebook_user_profile', function(session, request) {
     request.end();
 });
 //
-dbEventEmitter.on('eventRequest', function (eventName, address, timeout, userData) {
+dbEventEmitter.on('eventRequest', function (eventName, address, timeout, userData, session) {
     setTimeout(function () {
         let event = {
             name : eventName,
             data: {
                 address: JSON.stringify(address),
-                userData: JSON.stringify(userData),
-                first_name: userData.user_profile.first_name
+                userData: JSON.stringify(userData)
             }
         };
-
+    //
+    if (userData.user_profile || 'empty' !== 'empty') {
+        if (userData.user_profile.first_name || 'empty' !== 'empty') {
+            event.data.first_name = userData.user_profile.first_name
+        }
+    }
+    //
     let options = {
         sessionId: address.user.id
     };
@@ -239,6 +270,12 @@ dbEventEmitter.on('eventRequest', function (eventName, address, timeout, userDat
     let eventRequest = app.eventRequest(event, options);
 
     eventRequest.on('response', function(response) {
+        // when this activate it mean that api.ai response and we can send the actual text of the user.
+        if (session!==false) {
+            let textRequest = setTextRequest(session);
+            textRequest.end();
+            return;
+        }
         let address = JSON.parse(response.result.parameters.address);
         let userData = JSON.parse(response.result.parameters.userData);
         apiaiEventEmitter.emit('apiai_response', address, response, userData || {}, "eventRequest");
@@ -250,11 +287,6 @@ dbEventEmitter.on('eventRequest', function (eventName, address, timeout, userDat
     
     eventRequest.end();
     }, timeout || process.env.TIMEOUT_QUESTION_MS || 3000, eventName, address);
-    /*
-    bot.isInConversation(address, function (err, lastAccess) {
-        console.log('lastAccess: ' + lastAccess);
-    });
-    */
 });
 
 function chatFlow(connObj, response, userData, source) {
@@ -310,12 +342,15 @@ function chatFlow(connObj, response, userData, source) {
         sendLastQuestion(response, connObj, userData || {});
     }
     //
+    
+    if (actionsSendingNextQuestion.indexOf(intentAction)>=0) {
+        sendNextQuestion(response, address, userData || {});
+        return;
+    }
+
     let messages = buildMessages(response, address, source);
     sendMessages(response, connObj, messages, userData || {});
 
-    if (actionsSendingNextQuestion.indexOf(intentAction)>=0) {
-        sendNextQuestion(response, address, userData || {});
-    }
 }
 
 function replyByGender(intentAction, userData, address) {  // question reply (right/wrong)
@@ -339,7 +374,7 @@ function replyByGender(intentAction, userData, address) {  // question reply (ri
     }
     //
     if (eventName!==null) {
-        dbEventEmitter.emit('eventRequest', eventName, address, process.env.TIMEOUT_REPLY, userData || {});
+        dbEventEmitter.emit('eventRequest', eventName, address, process.env.TIMEOUT_REPLY, userData || {}, false);
     }
 }
 
@@ -739,13 +774,22 @@ function updateUserData(response, session) {
         session.userData.event = eventName;
     }
     //
-    //let parameterName = response.result.action.split('.')[1];   // input.[paramet_name]
-    //if (typeof session.userData.user_profile === typeof undefined) {
-    //    session.userData.user_profile = {};    
-    //}
-    //console.log('session.userData.user_profile: ' + session.userData.user_profile);
-    //session.userData.user_profile[parameterName] = response.result.parameters[parameterName];
-    //console.log('session.userData.user_profile: ' + session.userData.user_profile);
+    udpateUserDataByInputProfile(response, session);
+}
+
+function udpateUserDataByInputProfile(response, session) {
+    if (response.result.action.indexOf('profile.') !== (-1)) {
+        let parameterName = response.result.action.split('.')[1];   // profile.[paramet_name]
+        if (typeof session.userData.user_profile === typeof undefined) {
+            session.userData.user_profile = {};    
+        }
+        session.userData.user_profile[parameterName] = response.result.parameters[parameterName];
+        copyUserDataToDb(session);
+    }
+}
+
+function copyUserDataToDb(session) {
+    let refUser = ref.child('users').child(session.message.address.channelId).child(session.message.address.user.id).child('userData').child('user_profile').update(session.userData.user_profile);
 }
 
 function writeCurrentUserData(session, userData) {
@@ -757,7 +801,7 @@ function writeCurrentUserData(session, userData) {
 }
 
 function sendLastQuestion(response, connObj, userData) {
-    dbEventEmitter.emit('eventRequest', userData.event, connObj.message.address, null, userData || {});
+    dbEventEmitter.emit('eventRequest', userData.event, connObj.message.address, null, userData || {}, false);
 }
 
 function sendNextQuestion(response, address, userData) {
@@ -777,11 +821,11 @@ function lotteryQuestion(address, userData) {
     let objkeys1 = Object.keys(questions[subCategory]);
     let questionLen = objkeys1.length;
     let intent = objkeys1[Math.floor(Math.random() * questionLen)];
-    let eventName = questions[subCategory][intent].events[0].name
-    console.log(eventName);
+    let eventName = questions[subCategory][intent].name
+    console.log('eventName :' + eventName);
     //eventName = "QUESTION_7";
     userData.event = eventName;
-    dbEventEmitter.emit('eventRequest', eventName, address, null, userData || {});    
+    dbEventEmitter.emit('eventRequest', eventName, address, null, userData || {}, false);    
     
 }
 
@@ -799,7 +843,7 @@ function inputMetaQuestion(response, session) {
 function eventRequestEmit(session) {
     console.log('session.userData.event:' + session.userData.event || '');
     //console.log(userData || '');
-    dbEventEmitter.emit('eventRequest', session.userData.event || '', session.message.address, null/*, userData || {}*/);
+    dbEventEmitter.emit('eventRequest', session.userData.event || '', session.message.address, null, session.userData, false);
 }
 
 function readCurrentIntent(session) {
