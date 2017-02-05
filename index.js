@@ -248,6 +248,7 @@ userProfileEventEmitter.on('facebook_user_profile', function(session, request) {
 });
 //
 dbEventEmitter.on('eventRequest', function (eventName, address, timeout, userData, session) {
+    console.error('timeout ' + eventName + ' : '+ timeout || process.env.TIMEOUT_QUESTION_MS);
     setTimeout(function () {
         let event = {
             name : eventName,
@@ -286,7 +287,7 @@ dbEventEmitter.on('eventRequest', function (eventName, address, timeout, userDat
     });
     
     eventRequest.end();
-    }, timeout || process.env.TIMEOUT_QUESTION_MS || 3000, eventName, address);
+    }, timeout || process.env.TIMEOUT_QUESTION_MS, eventName, address);
 });
 
 function chatFlow(connObj, response, userData, source) {
@@ -826,7 +827,7 @@ function lotteryQuestion(address, userData) {
     console.log('eventName :' + eventName);
     //eventName = "QUESTION_7";
     userData.event = eventName;
-    dbEventEmitter.emit('eventRequest', eventName, address, null, userData || {}, false);    
+    dbEventEmitter.emit('eventRequest', eventName, address, 0, userData || {}, false);    
     
 }
 
