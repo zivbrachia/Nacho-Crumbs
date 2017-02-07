@@ -12,10 +12,10 @@
   "dependencies": {
     "apiai": "^3.0.3",
     "botanalytics-microsoftbotframework-middleware": "0.0.1",
-    "botbuilder": "^3.5.3",
-    "enum": "^2.3.0",
+    "botbuilder": "^3.6.0",
+    "enum": "^2.4.0",
     "events": "^1.1.1",
-    "firebase-admin": "^4.0.4",
+    "firebase-admin": "^4.1.0",
     "node-schedule": "^1.2.0",
     "request": "^2.79.0",
     "restify": "^4.3.0"

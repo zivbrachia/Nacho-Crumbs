@@ -157,9 +157,14 @@ function setTextRequest(session) {
     });
 
     textRequest.on('response', function(response) {
-        session.userData.lastSendTime = session.lastSendTime;   // the request has made and we can update the send time
+        setImmediate(function() {
+            session.userData.lastSendTime = session.lastSendTime;   // the request has made and we can update the send time
+            //
+            apiaiEventEmitter.emit('apiai_response', session, response, session.userData || {}, "textRequest");    
+        });
+        //session.userData.lastSendTime = session.lastSendTime;   // the request has made and we can update the send time
         //
-        apiaiEventEmitter.emit('apiai_response', session, response, session.userData || {}, "textRequest");
+        //apiaiEventEmitter.emit('apiai_response', session, response, session.userData || {}, "textRequest");
     });
 
     textRequest.on('error', function(error) {
@@ -202,6 +207,19 @@ const userProfileEventEmitter = new EventEmitter();
 
 /////////////////////////////////////////////////////////////////////////
 userProfileEventEmitter.on('facebook_user_profile', function(session, request) {
+    setImmediate(function() {
+        webRequest('https://graph.facebook.com/v2.6/'+ session.message.address.user.id +'?access_token=' + process.env.FACEBOOK_PAGE_ACCESS_TOKEN, function (error, response, body) {
+            if (!error && response.statusCode == 200) {
+                let user_profile = JSON.parse(body);
+                console.log('user_profile: ' + user_profile);
+                session.userData.user_profile = user_profile;
+                //
+                let refUser = ref.child('users').child(session.message.address.channelId).child(session.message.address.user.id).child('userData').child('user_profile');
+                refUser.update(user_profile);
+            }
+        });
+    });
+    /*
     webRequest('https://graph.facebook.com/v2.6/'+ session.message.address.user.id +'?access_token=' + process.env.FACEBOOK_PAGE_ACCESS_TOKEN, function (error, response, body) {
         if (!error && response.statusCode == 200) {
             let user_profile = JSON.parse(body);
@@ -209,6 +227,7 @@ userProfileEventEmitter.on('facebook_user_profile', function(session, request) {
             session.userData.user_profile = user_profile;
             //
             let refUser = ref.child('users').child(session.message.address.channelId).child(session.message.address.user.id).child('userData').child('user_profile');
+            refUser.update(user_profile);
             /*
             refUser.on('child_added', function (snapshot, prevChildKey) {
                 if (snapshot.key==='first_name') {
@@ -240,15 +259,16 @@ userProfileEventEmitter.on('facebook_user_profile', function(session, request) {
             });
             */
             //let refUser = ref.child('users').child(session.message.address.channelId).child(session.message.address.user.id).child('userData').child('user_profile').update(user_profile);
-            refUser.update(user_profile);
+            //refUser.update(user_profile);
+            /*
         }
     });
-
+    */
     request.end();
 });
 //
 dbEventEmitter.on('eventRequest', function (eventName, address, timeout, userData, session) {
-    console.error('timeout ' + eventName + ' : '+ timeout || process.env.TIMEOUT_QUESTION_MS);
+    console.error('setTimeout ' + eventName + ' : '+ timeout || process.env.TIMEOUT_QUESTION_MS);
     setTimeout(function () {
         let event = {
             name : eventName,
@@ -257,36 +277,48 @@ dbEventEmitter.on('eventRequest', function (eventName, address, timeout, userDat
                 userData: JSON.stringify(userData)
             }
         };
-    //
-    if (userData.user_profile || 'empty' !== 'empty') {
-        if (userData.user_profile.first_name || 'empty' !== 'empty') {
-            event.data.first_name = userData.user_profile.first_name
+        //
+        if (userData.user_profile || 'empty' !== 'empty') {
+            if (userData.user_profile.first_name || 'empty' !== 'empty') {
+                event.data.first_name = userData.user_profile.first_name
+            }
         }
-    }
-    //
-    let options = {
-        sessionId: address.user.id
-    };
-    
-    let eventRequest = app.eventRequest(event, options);
+        //
+        let options = {
+            sessionId: address.user.id
+        };
+        
+        let eventRequest = app.eventRequest(event, options);
 
-    eventRequest.on('response', function(response) {
-        // when this activate it mean that api.ai response and we can send the actual text of the user.
-        if (session!==false) {
-            let textRequest = setTextRequest(session);
-            textRequest.end();
-            return;
-        }
-        let address = JSON.parse(response.result.parameters.address);
-        let userData = JSON.parse(response.result.parameters.userData);
-        apiaiEventEmitter.emit('apiai_response', address, response, userData || {}, "eventRequest");
-    });
+        eventRequest.on('response', function(response) {
+            // when this activate it mean that api.ai response and we can send the actual text of the user.
+            setImmediate(function() {
+                if (session!==false) {
+                    let textRequest = setTextRequest(session);
+                    textRequest.end();
+                    return;
+                }
+                let address = JSON.parse(response.result.parameters.address);
+                let userData = JSON.parse(response.result.parameters.userData);
+                apiaiEventEmitter.emit('apiai_response', address, response, userData || {}, "eventRequest");
+            });
+            /*
+            if (session!==false) {
+                let textRequest = setTextRequest(session);
+                textRequest.end();
+                return;
+            }
+            let address = JSON.parse(response.result.parameters.address);
+            let userData = JSON.parse(response.result.parameters.userData);
+            apiaiEventEmitter.emit('apiai_response', address, response, userData || {}, "eventRequest");
+            */
+        });
 
-    eventRequest.on('error', function(error) {
-        console.log('error: ' + error);
-    });
+        eventRequest.on('error', function(error) {
+            console.log('error: ' + error);
+        });
     
-    eventRequest.end();
+        eventRequest.end();
     }, timeout || process.env.TIMEOUT_QUESTION_MS, eventName, address);
 });
 
@@ -295,31 +327,23 @@ function chatFlow(connObj, response, userData, source) {
     //
     let actionsReplyByGender = ['input.right', 'input.wrong'];
     let actionsMetaQuestion = ['input.metaQuestion'];
-    let actionsSendingNextQuestion = ['input.skip', 'input.next'];
+    let actionsSendingNextQuestion = ['input.skip', 'input.next', 'input.category'];
     let actionsReturnQuestion = ['input.return_question'];  //, 'input.clue', 'input.hint'];
     let actionsStop = ['input.break_setting'];
     //
     let address = connObj;
     if (connObj.constructor.name=='Session') {
         address = connObj.message.address;
-        /*
-        if (connObj.userData || 'empty'==='empty') {
-            connObj.userData = userData;
-        } else if (connObj.userData.user_profile || 'empty'==='empty') {
-            connObj.userData.user_profile = userData.user_profile;
-        }
-        if (connObj.userData.intent||'empty'!=='empty') {   // when userData.intent dont exists
-            console.log("userData: " + connObj.userData.intent.event || 'empty');
-        }
-        */
     }
     //
     if (actionsReplyByGender.indexOf(intentAction)>=0) {
         // go to reply by gender
         // always connObj will be 'Session' object, cannot answer questions with proactive that connObj is 'Address' object
-        replyByGender(intentAction, connObj.userData, address)
-        // there is no reason to continue the function and send messages because there is none...
-        return;
+        if (response.result.fulfillment.messages[0].speech==='') {
+            replyByGender(intentAction, connObj.userData, address)
+            // there is no reason to continue the function and send messages because there is none...
+            return;
+        }
     } else if (actionsMetaQuestion.indexOf(intentAction)>=0) {
         // always connObj will be 'Session' object, cannot ask metaQuestions with proactive that connObj is 'Address' object
         inputMetaQuestion(response, connObj)
@@ -337,22 +361,26 @@ function chatFlow(connObj, response, userData, source) {
         }
         let j = schedule.scheduleJob(date, function(){
             connObj.send("היי.... חזרתי");
-            lotteryQuestion(connObj.message.address, connObj.userData);
+            lotteryQuestion(connObj.message.address, connObj.userData, process.env.TIMEOUT_QUESTION_MS);
         }.bind(null, connObj));
     } else if (actionsReturnQuestion.indexOf(intentAction)>=0) {
         sendLastQuestion(response, connObj, userData || {});
         return;
     }
     //
-    
+
+    let messages = buildMessages(response, address, source);
+    sendMessages(response, connObj, messages, userData || {});
+
     if (actionsSendingNextQuestion.indexOf(intentAction)>=0) {
         sendNextQuestion(response, address, userData || {});
         return;
     }
 
-    let messages = buildMessages(response, address, source);
-    sendMessages(response, connObj, messages, userData || {});
-
+    if (intentAction==='profile.first_name') {  // TODO for MVP
+        dbEventEmitter.emit('eventRequest', 'Gender', address, 4000, userData || {}, false);
+        console.log("action: "+ intentAction);
+    }
 }
 
 function replyByGender(intentAction, userData, address) {  // question reply (right/wrong)
@@ -376,10 +404,37 @@ function replyByGender(intentAction, userData, address) {  // question reply (ri
     }
     //
     if (eventName!==null) {
-        dbEventEmitter.emit('eventRequest', eventName, address, process.env.TIMEOUT_REPLY, userData || {}, false);
+        dbEventEmitter.emit('eventRequest', eventName, address, null, userData || {}, false);
     }
 }
 
+function buildMsg(messageType, channelId, message) {
+    if (messageType==='TextResponse') {
+        if (channelId==='telegram') {
+
+        } else if (channelId==='facebook') {
+
+        }
+    } else if (messageType==='Card') {
+        if (channelId==='telegram') {
+
+        } else if (channelId==='facebook') {
+
+        }
+    } else if (messageType==='QuickReplies') {
+        if (channelId==='telegram') {
+
+        } else if (channelId==='facebook') {
+
+        }
+    } else if (messageType==='CustomPayload') {
+        if (channelId==='telegram') {
+
+        } else if (channelId==='facebook') {
+
+        }
+    }
+}
 function buildMessages(response, address, source) {
     let len = response.result.fulfillment.messages.length;
     let textResponseToQuickReplies = '';
@@ -416,6 +471,7 @@ function buildMessages(response, address, source) {
                 }
                 break;
             case 1: // Card
+                console.log('Card');
                 /*
                 let msg = new builder.Message(session).address(session.address).attachments([new builder.HeroCard(session).title("פיסת מידע").subtitle("פיסת מידע").text("זאת פיסת מידע בנושא השאלה שמכווינה לתשובה")
                 .images([builder.CardImage.create(session, 'https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcR0vB7eKzjzcDXW8Z-BaE5YoNnG3kgQ0S2lEg14-_3fWu88GkwIyQ')
@@ -505,11 +561,11 @@ function buildMessages(response, address, source) {
                 //
                 //messages.push(msg);
                 break;
-            case 3: // Card
+            case 3: // Image
                 msg = new builder.Message().address(address)
                     .attachments([{
-                        contentType: "image/jpeg",
-                        contentUrl: 'https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcR0vB7eKzjzcDXW8Z-BaE5YoNnG3kgQ0S2lEg14-_3fWu88GkwIyQ'
+                        contentType: "image/gif",
+                        contentUrl: message.imageUrl
                 }]);
                 messages.push(msg);
                 break;
@@ -537,7 +593,10 @@ function buildMessages(response, address, source) {
 }
 
 apiaiEventEmitter.on('apiai_response', function (connObj, response, userData, source) {
-        chatFlow(connObj, response, userData, source)
+        setImmediate(function() {
+            chatFlow(connObj, response, userData, source)
+        });
+        //chatFlow(connObj, response, userData, source)
         return;
         // connObj = session/address, response = from api.ai, userData = mainly if address sent, source = for debug
         /*
@@ -717,7 +776,7 @@ function sendMessages(response, session, messages, userData) {
     for (let i=0; i<(len); i++) {
         let message = messages[i];
         if (session.constructor.name=='Session') {
-            updateUserData = sendMessageBySession(message, response, session);        
+            updateUserData = sendMessageBySession(message, response, session);
         } else {
             message.userData = userData;
             updateUserData = sendMessageProactive(message, response);
@@ -751,7 +810,18 @@ function updateUserDataIntent(message, response) {
     if ((response.result.action=='input.question')&(response.result.metadata.intentName.indexOf(process.env.APIAI_QUESTION_TEMPLATE) !== (-1))) {
         let eventName = response.result.metadata.intentName;
         message.userData.event = eventName;
+        message.userData.questionCounter = getCounter(message.userData.questionCounter);
     }
+}
+
+function getCounter(number) {
+    if ((!number)&(number!==0)) {
+        return 0;
+    }
+    if (number>3) {
+        return 0;
+    }
+    return (number+1);
 }
 
 function sendMessageBySession(message, response, session) {
@@ -774,6 +844,7 @@ function updateUserData(response, session) {
     if ((response.result.action=='input.question')&(response.result.metadata.intentName.indexOf(process.env.APIAI_QUESTION_TEMPLATE) !== (-1))) {
         let eventName = response.result.metadata.intentName;
         session.userData.event = eventName;
+        session.userData.questionCounter = getCounter(session.userData.questionCounter);
     }
     //
     udpateUserDataByInputProfile(response, session);
@@ -803,17 +874,47 @@ function writeCurrentUserData(session, userData) {
 }
 
 function sendLastQuestion(response, connObj, userData) {
-    dbEventEmitter.emit('eventRequest', userData.event, connObj.message.address, null, userData || {}, false);
+    dbEventEmitter.emit('eventRequest', userData.event, connObj.message.address, process.env.TIMEOUT_REPLY, userData || {}, false);
 }
 
 function sendNextQuestion(response, address, userData) {
     let actionsForSending = ['input.skip', 'input.next'];
-    if (actionsForSending.indexOf(response.result.action)>=0) {
-        lotteryQuestion(address, userData);
+    let aaa = ['input.category'];
+    let timeout = 4000;
+    if (response.result.fulfillment.messages[0].speech!=='') {
+            timeout = 4000;
     }
+    //
+    if (actionsForSending.indexOf(response.result.action)>=0) {
+        if (userData.questionCounter===3) {
+            lotteryInformation(address, userData, timeout);
+        } else {
+            lotteryQuestion(address, userData, timeout);
+        }
+    } //else if (aaa.indexOf(response.result.action)>=0) {
+      //  dbEventEmitter.emit('eventRequest', 'Category_Dna', address, 4000, userData || {}, false);    
+    //}
 }
 
-function lotteryQuestion(address, userData) {
+function lotteryInformation(address, userData, timeout) {
+    if ((questions || 'empty') === 'empty') {
+        return;
+    }
+    let objKeys = Object.keys(questions)
+    let subCategoryLen = objKeys.length;
+    let subCategory = objKeys[Math.floor(Math.random() * subCategoryLen)];
+    let objkeys1 = Object.keys(questions[subCategory]);
+    let questionLen = objkeys1.length;
+    let intent = objkeys1[Math.floor(Math.random() * questionLen)];
+    let eventName = questions[subCategory][intent].name
+    console.log('eventName :' + eventName);
+    //eventName = "QUESTION_7";
+    userData.event = 'Information_1';
+    dbEventEmitter.emit('eventRequest', eventName, address, timeout, userData || {}, false);    
+    
+}
+
+function lotteryQuestion(address, userData, timeout) {
     if ((questions || 'empty') === 'empty') {
         return;
     }
@@ -827,7 +928,7 @@ function lotteryQuestion(address, userData) {
     console.log('eventName :' + eventName);
     //eventName = "QUESTION_7";
     userData.event = eventName;
-    dbEventEmitter.emit('eventRequest', eventName, address, 0, userData || {}, false);    
+    dbEventEmitter.emit('eventRequest', eventName, address, timeout, userData || {}, false);    
     
 }
 
