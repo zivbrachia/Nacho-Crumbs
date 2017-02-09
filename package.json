@@ -11,11 +11,13 @@
   "license": "ISC",
   "dependencies": {
     "apiai": "^3.0.3",
+    "body-parser": "^1.16.0",
     "botanalytics-microsoftbotframework-middleware": "0.0.1",
     "botbuilder": "^3.6.0",
     "enum": "^2.4.0",
     "events": "^1.1.1",
     "firebase-admin": "^4.1.0",
+    "fs": "0.0.1-security",
     "node-schedule": "^1.2.0",
     "request": "^2.79.0",
     "restify": "^4.3.0"

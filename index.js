@@ -5,13 +5,15 @@ let builder = require('botbuilder');
 let EventEmitter = require('events').EventEmitter;
 let apiai = require('apiai');
 let webRequest = require('request');
-var schedule = require('node-schedule');
+let schedule = require('node-schedule');
 //require('./config.js');
 let firebase = require('firebase-admin');
 let db_credential = require('./serviceAccountKey.js');
 let BotanalyticsMiddleware = require('botanalytics-microsoftbotframework-middleware').BotanalyticsMiddleware({
     token: process.env.BOTANALYTICS_TOKEN
 });
+let fs = require('fs');
+let bodyParser = require('body-parser'); // for webhook
 
 firebase.initializeApp({
     credential: firebase.credential.cert(db_credential.serviceAccount),
@@ -44,6 +46,15 @@ server.get('/', function(req, res, next) {
     next();
 });
 
+server.get('/info', function (req, res, next) {
+    let html = fs.readFileSync(__dirname + '/index.html', 'utf8');
+    let title = 'Title';
+    let subtitle = 'Subtitle';
+    html = html.replace('{title}', title);
+    html = html.replace('{subtitle}', title);
+    res.end(html);
+});
+//
 server.get('/build', function(req, res, next) {
     console.error("build");
     getAllIntents();
@@ -109,8 +120,101 @@ bot.use({
     
 });
 
+server.use(bodyParser.json());   // webhook
 server.post('/api/messages', connector.listen());
 
+server.post('/webhook', function create(req, res, next) {   // webhook
+    console.log('hook request');
+    let bodyParser = require('body-parser');
+    try {
+        //var speech = 'empty speech';
+        var speech = '';
+
+        if (req.body) {
+            var requestBody = req.body;
+
+            if (requestBody.result) {
+                //requestBody.result.parameters.any
+                ref.child('contacts').once("value", function(snapshot) {
+                    let contacts = snapshot.val();
+                    //
+                    if (requestBody.result.action==='save_contact') {
+                        speech = 'שמרתי את הנתונים, תודה :)';
+                        let position = contacts.length;
+                        let contact = {};
+                        contact['name'] = requestBody.result.parameters['name'];
+                        contact['phone-number'] = requestBody.result.parameters['phone-number'][0];
+                        contact['job-place'] = requestBody.result.parameters['job-place'][0];
+                        contact['job-title'] = requestBody.result.parameters['job-title'][0];
+                        contacts.push(contact);
+                        let refUser = ref.child('contacts').set(contacts);
+                    }
+                    else {
+                        contacts.forEach(function(contact) {
+                            if (contact.name.indexOf(requestBody.result.parameters.any)>=0) {
+                                speech += contact.name + ' ' + contact['phone-number'];
+                                speech += '\n';
+                            } 
+                            if (contact['job-place'].indexOf(requestBody.result.parameters.any)>=0) {
+                                speech += contact.name + ' ' + contact['phone-number'];
+                                speech += '\n';
+                            }
+                            if (contact['job-title'].indexOf(requestBody.result.parameters.any)>=0) {
+                                speech += contact.name + ' ' + contact['phone-number'];
+                                speech += '\n';
+                            }
+                            if (contact['phone-number'].indexOf(requestBody.result.parameters.any)>=0) {
+                                speech += contact.name + ' ' + contact['phone-number'];
+                                speech += '\n';
+                            }
+                        }, this);
+                    }
+                    //
+                    console.log(speech);
+                    if (!speech) {
+                        speech = 'empty speech'
+                    }
+                    return res.json({
+                        speech: speech,
+                        displayText: speech,
+                        source: 'apiai-webhook-sample'
+                    });
+                }, function (errorObject) {
+                    console.log("The read failed: " + errorObject.code);
+                });
+                /*
+                speech = '';
+
+                if (requestBody.result.fulfillment) {
+                    speech += requestBody.result.fulfillment.speech;
+                    speech += ' ';
+                }
+
+                if (requestBody.result.action) {
+                    speech += 'action: ' + requestBody.result.action;
+                }
+                */
+            }
+        }
+
+        //console.log('result: ', speech);
+
+        //return res.json({
+        //    speech: speech,
+        //    displayText: speech,
+        //    source: 'apiai-webhook-sample'
+        //});
+    } catch (err) {
+        console.error("Can't process request", err);
+
+        return res.status(400).json({
+            status: {
+                code: 400,
+                errorType: err.message
+            }
+        });
+    }
+});
 //=========================================================
 // Bots Dialogs
 //=========================================================
@@ -1024,3 +1128,4 @@ function buildIntexCatalog(intent) {
     }
     return temp;
 }
+
