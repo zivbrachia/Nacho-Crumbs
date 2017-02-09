@@ -48,8 +48,8 @@ server.get('/', function(req, res, next) {
 
 server.get('/info', function (req, res, next) {
     let html = fs.readFileSync(__dirname + '/index.html', 'utf8');
-    let title = 'Title';
-    let subtitle = 'Subtitle';
+    let title = 'פיסת מידע';
+    let subtitle = 'פיסת מידע';
     html = html.replace('{title}', title);
     html = html.replace('{subtitle}', title);
     res.end(html);
