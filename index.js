@@ -6,7 +6,7 @@ let EventEmitter = require('events').EventEmitter;
 let apiai = require('apiai');
 let webRequest = require('request');
 let schedule = require('node-schedule');
-//require('./config.js');
+require('./config.js');
 let firebase = require('firebase-admin');
 let db_credential = require('./serviceAccountKey.js');
 let BotanalyticsMiddleware = require('botanalytics-microsoftbotframework-middleware').BotanalyticsMiddleware({
@@ -222,15 +222,14 @@ let intents = new builder.IntentDialog();
 
 intents.onDefault(function (session) {
     let now = new Date();
-    console.log(now.toTimeString() +'text: '+ session.message.text);
-    console.log('typing...');
+    console.log('typing... message text: ' + session.message.text);
     session.sendTyping();
     //
     
     let lastSendTime = new Date(session.userData.lastSendTime || now);
-    console.log('lastSendTime: ' + lastSendTime.toTimeString());
+    //console.log('lastSendTime: ' + lastSendTime.toTimeString());
     lastSendTime.setMinutes(lastSendTime.getMinutes() + parseInt(process.env.APIAI_SESSION_TIMEOUT));
-    console.log('lastSendTime: ' + lastSendTime.toTimeString());
+    //console.log('lastSendTime: ' + lastSendTime.toTimeString());
     //
     let textRequest = null;
     if (lastSendTime.getTime() < now.getTime()) {
@@ -256,6 +255,9 @@ intents.onDefault(function (session) {
 });
 
 function setTextRequest(session) {
+    if (!session.userData.address) {
+        session.message.text = 'hello';
+    }
     let textRequest = app.textRequest(session.message.text, {
         sessionId: session.message.address.user.id
     });
@@ -266,9 +268,6 @@ function setTextRequest(session) {
             //
             apiaiEventEmitter.emit('apiai_response', session, response, session.userData || {}, "textRequest");    
         });
-        //session.userData.lastSendTime = session.lastSendTime;   // the request has made and we can update the send time
-        //
-        //apiaiEventEmitter.emit('apiai_response', session, response, session.userData || {}, "textRequest");
     });
 
     textRequest.on('error', function(error) {
@@ -428,11 +427,12 @@ dbEventEmitter.on('eventRequest', function (eventName, address, timeout, userDat
 
 function chatFlow(connObj, response, userData, source) {
     let intentAction = response.result.action;
+    console.error('INTENT_NAME: ' + response.result.metadata.intentName + ',  ' + 'ACTION_NAME: ' + intentAction + ', ' + 'SOURCE: ' + source);
     //
     let actionsReplyByGender = ['input.right', 'input.wrong'];
-    let actionsMetaQuestion = ['input.metaQuestion'];
+    let actionsMetaQuestion = ['input.metaQuestion', 'input.explain_last_question'];
     let actionsSendingNextQuestion = ['input.skip', 'input.next', 'input.category'];
-    let actionsReturnQuestion = ['input.return_question'];  //, 'input.clue', 'input.hint'];
+    let actionsReturnQuestion = ['input.return_question', 'input.hint_replay'];  //, 'input.clue', 'input.hint'];
     let actionsStop = ['input.break_setting'];
     //
     let address = connObj;
@@ -450,7 +450,8 @@ function chatFlow(connObj, response, userData, source) {
         }
     } else if (actionsMetaQuestion.indexOf(intentAction)>=0) {
         // always connObj will be 'Session' object, cannot ask metaQuestions with proactive that connObj is 'Address' object
-        inputMetaQuestion(response, connObj)
+        inputMetaQuestion(response, connObj);
+        return;
     } else if (actionsStop.indexOf(intentAction)>=0) {
         let date = new Date();
         if (response.result.parameters.duration) {
@@ -540,13 +541,19 @@ function buildMsg(messageType, channelId, message) {
     }
 }
 function buildMessages(response, address, source) {
+    let startWith = '';
+    if (response.result.action==="input.question") {
+        startWith = 'שאלה: ';
+    } else if (response.result.action==="input.hint_ask") {
+        startWith = 'רמז: ';
+    }
     let len = response.result.fulfillment.messages.length;
     let textResponseToQuickReplies = '';
     let messages = [];
     for (let i=0; i<(len); i++) {
         let message = response.result.fulfillment.messages[i];
         let msg = {};
-        console.log("message type: " + message.type + " " + source);
+        //console.log("message type: " + message.type + " " + source);
         switch(message.type) {
             case 0: // Text response
                 if (message.speech.indexOf('[>>]') !== (-1)) {
@@ -558,7 +565,7 @@ function buildMessages(response, address, source) {
                         telegram:{
                             method: 'sendMessage',
                             parameters: {
-                                text: message.speech,
+                                text: startWith + message.speech,
                                 parse_mode: 'Markdown',
                                 reply_markup: {
                                     hide_keyboard: true
@@ -570,7 +577,8 @@ function buildMessages(response, address, source) {
                 }
                 else if (address.channelId==='facebook') {
                     let text = message.speech.replace(/\n/g, '\n\r');
-                    msg = new builder.Message().address(address).text((response.result.action=="input.question")? ("שאלה:" + " " + text):(text));
+                    //msg = new builder.Message().address(address).text((response.result.action=="input.question")? ("שאלה:" + " " + text):(text));
+                    msg = new builder.Message().address(address).text(startWith + text);
                     messages.push(msg);
                 }
                 break;
@@ -592,7 +600,7 @@ function buildMessages(response, address, source) {
                 if (address.channelId==='facebook') {
                     let facebookObj = {};
                     facebookObj.facebook = {};
-                    facebookObj.facebook['text'] = (response.result.action=="input.question")? ("שאלה:" + " " + message.title):(message.title);
+                    facebookObj.facebook['text'] = startWith + message.title;
                     if (message.title.indexOf('[>>]') !== (-1)) {
                         facebookObj.facebook['text'] = textResponseToQuickReplies.replace(/\n/g, '\n\r');
                     }
@@ -645,7 +653,7 @@ function buildMessages(response, address, source) {
                         telegram:{
                             method: 'sendMessage',
                             parameters: {
-                                text: message.title,
+                                text: startWith + message.title,
                                 parse_mode: 'Markdown',
                                 reply_markup: {
                                     //hide_keyboard: true
@@ -978,7 +986,11 @@ function writeCurrentUserData(session, userData) {
 }
 
 function sendLastQuestion(response, connObj, userData) {
-    dbEventEmitter.emit('eventRequest', userData.event, connObj.message.address, process.env.TIMEOUT_REPLY, userData || {}, false);
+    if (response.result.action==='input.hint_replay') {
+        dbEventEmitter.emit('eventRequest', userData.event.replace('Ask', 'HintAsk'), connObj.message.address, process.env.TIMEOUT_REPLY, userData || {}, false);
+    } else {
+        dbEventEmitter.emit('eventRequest', userData.event, connObj.message.address, process.env.TIMEOUT_REPLY, userData || {}, false);
+    }
 }
 
 function sendNextQuestion(response, address, userData) {
@@ -1037,13 +1049,16 @@ function lotteryQuestion(address, userData, timeout) {
 }
 
 function inputMetaQuestion(response, session) {
-    if (response.result.action=='input.metaQuestion') {
+    if (response.result.action==='input.metaQuestion') {
         if (!session.userData.event) {
             readCurrentIntent(session);
         } else {
             //dbEventEmitter.emit('eventRequest', session.userData.intent.event, address);
             eventRequestEmit(session);
         }
+    }
+    else if (response.result.action==='input.explain_last_question') {
+        dbEventEmitter.emit('eventRequest', session.userData.event.replace('Ask', 'Explain') || '', session.message.address, null, session.userData, false);
     }
 }
 
@@ -1128,4 +1143,5 @@ function buildIntexCatalog(intent) {
     }
     return temp;
 }
+
 
