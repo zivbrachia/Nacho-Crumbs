@@ -80,7 +80,7 @@ function readAddresses(req, res, next, channelId, eventName) {
             //
             let userData = users[user].userData;
             //
-            dbEventEmitter.emit('eventRequest', eventName, address, null, userData, false);
+            dbEventEmitter.emit('eventRequest', eventName, address, 0, userData, false);
         }, this);
         next();
         ////////////////////////////////////////////////////
@@ -440,6 +440,14 @@ function chatFlow(connObj, response, userData, source) {
         address = connObj.message.address;
     }
     //
+    if ((!userData.intent)&(intentAction!=='input.welcome')) { // first time ever - sends default welcome intent - whatever the user says
+        dbEventEmitter.emit('eventRequest', 'WELCOME', address, 0, userData || {}, false);
+        return;
+    } else if ((!!userData.intent)&(intentAction==='input.welcome')) {
+        dbEventEmitter.emit('eventRequest', 'Welcome_Second_Time', address, 0, userData || {}, false);
+        return;
+    }
+    //
     if (actionsReplyByGender.indexOf(intentAction)>=0) {
         // go to reply by gender
         // always connObj will be 'Session' object, cannot answer questions with proactive that connObj is 'Address' object
@@ -509,7 +517,7 @@ function replyByGender(intentAction, userData, address) {  // question reply (ri
     }
     //
     if (eventName!==null) {
-        dbEventEmitter.emit('eventRequest', eventName, address, null, userData || {}, false);
+        dbEventEmitter.emit('eventRequest', eventName, address, 0, userData || {}, false);
     }
 }
 
@@ -1058,14 +1066,14 @@ function inputMetaQuestion(response, session) {
         }
     }
     else if (response.result.action==='input.explain_last_question') {
-        dbEventEmitter.emit('eventRequest', session.userData.event.replace('Ask', 'Explain') || '', session.message.address, null, session.userData, false);
+        dbEventEmitter.emit('eventRequest', session.userData.event.replace('Ask', 'Explain') || '', session.message.address, 0, session.userData, false);
     }
 }
 
 function eventRequestEmit(session) {
     console.log('session.userData.event:' + session.userData.event || '');
     //console.log(userData || '');
-    dbEventEmitter.emit('eventRequest', session.userData.event || '', session.message.address, null, session.userData, false);
+    dbEventEmitter.emit('eventRequest', session.userData.event || '', session.message.address, 0, session.userData, false);
 }
 
 function readCurrentIntent(session) {
