@@ -46,13 +46,27 @@ server.get('/', function(req, res, next) {
     next();
 });
 
-server.get('/info', function (req, res, next) {
-    let html = fs.readFileSync(__dirname + '/index.html', 'utf8');
-    let title = 'פיסת מידע';
-    let subtitle = 'פיסת מידע';
+server.get('/info/:infoId', function (req, res, next) {
+    let infoId = req.params.infoId || 'empty';
+    let title = infoId;
+    let header1 = infoId;
+    let header2 = infoId;
+    let heading1 = infoId;
+    let lead1 = infoId;
+    //
+    let html = fs.readFileSync(__dirname + '/public/info.html', 'utf8');
+    //
     html = html.replace('{title}', title);
-    html = html.replace('{subtitle}', title);
+    html = html.replace('{header1}', header1);
+    html = html.replace('{header2}', header2);
+    html = html.replace('{heading1}', heading1);
+    html = html.replace('{lead1}', lead1);
     res.end(html);
+});
+
+server.get('/public/:folder/:fileName', function (req, res, next) {
+    let file = fs.readFileSync(__dirname + '/public/' + req.params.folder + '/' + req.params.fileName, 'utf8');
+    res.end(file);
 });
 //
 server.get('/build', function(req, res, next) {
@@ -434,6 +448,7 @@ function chatFlow(connObj, response, userData, source) {
     let actionsSendingNextQuestion = ['input.skip', 'input.next', 'input.category'];
     let actionsReturnQuestion = ['input.return_question', 'input.hint_replay'];  //, 'input.clue', 'input.hint'];
     let actionsStop = ['input.break_setting'];
+    let actionExpand = ['input.info_expand'];
     //
     let address = connObj;
     if (connObj.constructor.name=='Session') {
@@ -558,6 +573,14 @@ function buildMessages(response, address, source) {
     let len = response.result.fulfillment.messages.length;
     let textResponseToQuickReplies = '';
     let messages = [];
+    //
+    if (response.result.action==='input.info_expand') {
+        let msg = {};
+        msg = new builder.Message().address(address).sourceEvent(cardJson('zzz'));
+        messages.push(msg);
+        return messages;
+    }
+    //
     for (let i=0; i<(len); i++) {
         let message = response.result.fulfillment.messages[i];
         let msg = {};
@@ -1150,6 +1173,47 @@ function buildIntexCatalog(intent) {
         }
     }
     return temp;
+}
+
+function cardJson(infoId) {
+    let payload = {};
+    payload.facebook = cardJsonFacebook(infoId);
+    let payload_facebook = cardJsonFacebook();
+    //let payload_telegram = cardJsonTelegram();
+    return payload;
+}
+
+function cardJsonFacebook(infoId) {
+    let facebook = {attachment: {
+                        payload: {
+                            elements: [
+                                {
+                                    buttons: [
+                                        {
+                                            title: 'compact',
+                                            type: 'web_url',
+                                            url: 'https://nacho-crumbs.herokuapp.com/info/' + infoId,
+                                            webview_height_ratio: 'compact'
+                                        },
+                                        {
+                                            title: 'full',
+                                            type: 'web_url',
+                                            url: 'https://nacho-crumbs.herokuapp.com/info/' + infoId,
+                                            webview_height_ratio: 'full'
+                                        }
+                                    ],
+                                    image_url: 'https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fnacho1024.png?alt=media&token=40ea8306-8bf6-4810-b2b0-f45678438746',
+                                    item_url: 'https://nacho-crumbs.herokuapp.com/info/' + infoId,
+                                    subtitle: 'subtitle',
+                                    title: 'title'
+                                }
+                            ],
+                            template_type: 'generic'
+                        },
+                        type: 'template'
+                    }
+            }
+    return facebook;
 }
 
 
