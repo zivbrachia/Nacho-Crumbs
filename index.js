@@ -1035,7 +1035,8 @@ function sendNextQuestion(response, address, userData) {
     //
     if (actionsForSending.indexOf(response.result.action)>=0) {
         if (userData.questionCounter===3) {
-            lotteryInformation(address, userData, timeout);
+            //lotteryInformation(address, userData, timeout);
+            lotteryQuestion(address, userData, timeout);
         } else {
             lotteryQuestion(address, userData, timeout);
         }
