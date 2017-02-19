@@ -1273,13 +1273,13 @@ function cardJsonFacebook(infoId, response) {
                                 {
                                     buttons: [
                                         {
-                                            title: 'המשך',
+                                            title: 'compact',
                                             type: 'postback',
                                             url: 'https://nacho-crumbs.herokuapp.com/info/' + infoId,
                                             webview_height_ratio: 'compact'
                                         },
                                         {
-                                            title: 'כנס לאתר',
+                                            title: 'tall',
                                             type: 'web_url',
                                             url: 'https://nacho-crumbs.herokuapp.com/info/' + infoId,
                                             webview_height_ratio: 'tall'
@@ -1287,8 +1287,8 @@ function cardJsonFacebook(infoId, response) {
                                     ],
                                     image_url: 'https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fnacho1024.png?alt=media&token=40ea8306-8bf6-4810-b2b0-f45678438746',
                                     item_url: 'https://nacho-crumbs.herokuapp.com/info/' + infoId,
-                                    subtitle: 'תת כותרת',
-                                    title: 'כותרת'
+                                    subtitle: 'subtitle',
+                                    title: 'title'
                                 }
                             ],
                             template_type: 'generic'
