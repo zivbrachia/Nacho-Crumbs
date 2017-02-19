@@ -236,7 +236,7 @@ let intents = new builder.IntentDialog();
 
 intents.onDefault(function (session) {
     let now = new Date();
-    console.log('typing... message text: ' + session.message.text);
+    console.log('typing... message text: ' + session.message.text + ' userData: ' + session.userData.questionCounter);
     session.sendTyping();
     //
     
@@ -386,6 +386,7 @@ userProfileEventEmitter.on('facebook_user_profile', function(session, request) {
 //
 dbEventEmitter.on('eventRequest', function (eventName, address, timeout, userData, session) {
     console.error('setTimeout ' + eventName + ' : '+ timeout || process.env.TIMEOUT_QUESTION_MS);
+    console.log('userData ' + userData.questionCounter);
     setTimeout(function () {
         let event = {
             name : eventName,
@@ -576,7 +577,7 @@ function buildMessages(response, address, source) {
     //
     if (response.result.action==='input.info_expand') {
         let msg = {};
-        msg = new builder.Message().address(address).sourceEvent(cardJson('zzz'));
+        msg = new builder.Message().address(address).sourceEvent(cardJson('zzz', address, response));
         messages.push(msg);
         return messages;
     }
@@ -1047,6 +1048,7 @@ function lotteryInformation(address, userData, timeout) {
     if ((questions || 'empty') === 'empty') {
         return;
     }
+    /*
     let objKeys = Object.keys(questions)
     let subCategoryLen = objKeys.length;
     let subCategory = objKeys[Math.floor(Math.random() * subCategoryLen)];
@@ -1056,7 +1058,10 @@ function lotteryInformation(address, userData, timeout) {
     let eventName = questions[subCategory][intent].name
     console.log('eventName :' + eventName);
     //eventName = "QUESTION_7";
-    userData.event = 'Information_1';
+    */
+    let eventName = 'Information_1';
+    //userData.event = 'Information_1';
+    userData.questionCounter = 0;
     dbEventEmitter.emit('eventRequest', eventName, address, timeout, userData || {}, false);    
     
 }
@@ -1075,6 +1080,7 @@ function lotteryQuestion(address, userData, timeout) {
     console.log('eventName :' + eventName);
     //eventName = "QUESTION_7";
     userData.event = eventName;
+    userData.questionCounter = getCounter(userData.questionCounter);
     dbEventEmitter.emit('eventRequest', eventName, address, timeout, userData || {}, false);    
     
 }
@@ -1175,15 +1181,92 @@ function buildIntexCatalog(intent) {
     return temp;
 }
 
-function cardJson(infoId) {
+function cardJson(infoId, address, response) {
     let payload = {};
-    payload.facebook = cardJsonFacebook(infoId);
-    let payload_facebook = cardJsonFacebook();
-    //let payload_telegram = cardJsonTelegram();
+    //
+    if (address.channelId === 'facebook') {
+        payload.facebook = cardJsonFacebook(infoId, response);
+    } else if (address.channelId === 'telegram') {
+        payload.telegram = cardJsonTelegram(infoId, response);
+    }
     return payload;
 }
 
-function cardJsonFacebook(infoId) {
+function cardJsonTelegram(infoId, response) {
+    let telegram = {    method: "sendMessage",
+                        text: 'title',
+                        parameters: {
+                            reply_markup: {
+                                inline_keyboard: [
+                                    [
+                                       {
+                                            text: 'title',
+                                            url: 'https://nacho-crumbs.herokuapp.com/info/' + infoId
+                                       } 
+                                    ]
+                                ]
+                            }
+                        }
+
+    }
+    return telegram;
+}
+
+function buildButtons(buttons) {
+    let len = buttons.length;
+    let buttonsResult = [];
+    for (let i=0; i<(len); i++) {
+        buttonsResult.push(buildButton(buttons[i]['text'], buttons[i].postback));
+    }
+    
+    
+    return buttonsResult;
+}
+
+function buildButton(text, url) {
+    let button = {};
+    button.title = text;
+    if (url==='' ){
+        button.type = 'postback'    
+    } else {
+        button.type = 'web_url'
+        button.url = url;
+        button.webview_height_ratio =  'tall';
+    }
+    return button;
+}
+
+function buildElement(message) {
+    let element = {};
+    //
+    if (message.type!==1) {
+        return element;
+    }
+    element.buttons = [];
+    element.buttons.push(buildButtons(message.buttons));
+    element.image_url = message.imageUrl;
+    element.item_url = message.imageUrl;
+    element.subtitle = message.subtitle;
+    element.title = message.title;
+    //
+    return element;
+}
+
+function cardJsonFacebook(infoId, response) {
+    let facebook = {};
+    facebook.attachment = {};
+    facebook.attachment.type = 'template';
+    facebook.attachment.payload = {};
+    facebook.attachment.payload.template_type = 'generic';
+    facebook.attachment.payload.elements = [];
+    //
+    let len = response.result.fulfillment.messages.length;
+    for (let i=0; i<(len); i++) {
+        facebook.attachment.payload.elements.push(buildElement(response.result.fulfillment.messages[i]));
+    }
+    //
+    //facebook.attachment.payload.elements.push(buildElement(response));
+    /*
     let facebook = {attachment: {
                         payload: {
                             elements: [
@@ -1213,6 +1296,7 @@ function cardJsonFacebook(infoId) {
                         type: 'template'
                     }
             }
+            */
     return facebook;
 }
 
