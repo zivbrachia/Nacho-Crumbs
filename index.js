@@ -6,7 +6,7 @@ let EventEmitter = require('events').EventEmitter;
 let apiai = require('apiai');
 let webRequest = require('request');
 let schedule = require('node-schedule');
-//require('./config.js');
+require('./config.js');
 let firebase = require('firebase-admin');
 let db_credential = require('./serviceAccountKey.js');
 let BotanalyticsMiddleware = require('botanalytics-microsoftbotframework-middleware').BotanalyticsMiddleware({
@@ -1253,6 +1253,7 @@ function buildElement(message) {
 }
 
 function cardJsonFacebook(infoId, response) {
+    /*
     let facebook = {};
     facebook.attachment = {};
     facebook.attachment.type = 'template';
@@ -1264,22 +1265,21 @@ function cardJsonFacebook(infoId, response) {
     for (let i=0; i<(len); i++) {
         facebook.attachment.payload.elements.push(buildElement(response.result.fulfillment.messages[i]));
     }
-    //
-    //facebook.attachment.payload.elements.push(buildElement(response));
-    /*
+    */
+    
     let facebook = {attachment: {
                         payload: {
                             elements: [
                                 {
                                     buttons: [
                                         {
-                                            title: 'compact',
-                                            type: 'web_url',
-                                            url: 'https://nacho-crumbs.herokuapp.com/info/' + infoId,
-                                            webview_height_ratio: 'compact'
+                                            title: 'המשך',
+                                            type: 'postback',
+                                            //url: 'https://nacho-crumbs.herokuapp.com/info/' + infoId,
+                                            //webview_height_ratio: 'compact'
                                         },
                                         {
-                                            title: 'tall',
+                                            title: 'כנס לאתר',
                                             type: 'web_url',
                                             url: 'https://nacho-crumbs.herokuapp.com/info/' + infoId,
                                             webview_height_ratio: 'tall'
@@ -1287,8 +1287,8 @@ function cardJsonFacebook(infoId, response) {
                                     ],
                                     image_url: 'https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fnacho1024.png?alt=media&token=40ea8306-8bf6-4810-b2b0-f45678438746',
                                     item_url: 'https://nacho-crumbs.herokuapp.com/info/' + infoId,
-                                    subtitle: 'subtitle',
-                                    title: 'title'
+                                    subtitle: 'תת כותרת',
+                                    title: 'כותרת'
                                 }
                             ],
                             template_type: 'generic'
@@ -1296,7 +1296,7 @@ function cardJsonFacebook(infoId, response) {
                         type: 'template'
                     }
             }
-            */
+            
     return facebook;
 }
 
