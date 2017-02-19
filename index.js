@@ -1274,9 +1274,9 @@ function cardJsonFacebook(infoId, response) {
                                     buttons: [
                                         {
                                             title: 'המשך',
-                                            type: 'postback'
-                                            //url: 'https://nacho-crumbs.herokuapp.com/info/' + infoId,
-                                            //webview_height_ratio: 'compact'
+                                            type: 'postback',
+                                            url: 'https://nacho-crumbs.herokuapp.com/info/' + infoId,
+                                            webview_height_ratio: 'compact'
                                         },
                                         {
                                             title: 'כנס לאתר',
