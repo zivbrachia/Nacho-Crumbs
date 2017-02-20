@@ -6,7 +6,7 @@ let EventEmitter = require('events').EventEmitter;
 let apiai = require('apiai');
 let webRequest = require('request');
 let schedule = require('node-schedule');
-//require('./config.js');
+require('./config.js');
 let firebase = require('firebase-admin');
 let db_credential = require('./serviceAccountKey.js');
 let BotanalyticsMiddleware = require('botanalytics-microsoftbotframework-middleware').BotanalyticsMiddleware({
@@ -1185,11 +1185,12 @@ function buildIntexCatalog(intent) {
 function cardJson(infoId, address, response) {
     let payload = {};
     //
-    if (address.channelId === 'facebook') {
+    //if (address.channelId === 'facebook') {
         payload.facebook = cardJsonFacebook(infoId, response);
-    } else if (address.channelId === 'telegram') {
+    //} else if (address.channelId === 'telegram') {
         payload.telegram = cardJsonTelegram(infoId, response);
-    }
+    //}
+    console.log(JSON.stringify(payload));
     return payload;
 }
 
@@ -1269,9 +1270,15 @@ function cardJsonFacebook(infoId, response) {
     */
     
     let facebook = {attachment: {
+                        type: 'template',
                         payload: {
+                            template_type: 'generic',
                             elements: [
                                 {
+                                    image_url: 'https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fnacho1024.png?alt=media&token=40ea8306-8bf6-4810-b2b0-f45678438746',
+                                    item_url: 'https://nacho-crumbs.herokuapp.com/info/' + infoId,
+                                    subtitle: 'subtitle',
+                                    title: 'title',
                                     buttons: [
                                         {
                                             title: 'compact',
@@ -1285,16 +1292,10 @@ function cardJsonFacebook(infoId, response) {
                                             url: 'https://nacho-crumbs.herokuapp.com/info/' + infoId,
                                             webview_height_ratio: 'tall'
                                         }
-                                    ],
-                                    image_url: 'https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fnacho1024.png?alt=media&token=40ea8306-8bf6-4810-b2b0-f45678438746',
-                                    item_url: 'https://nacho-crumbs.herokuapp.com/info/' + infoId,
-                                    subtitle: 'subtitle',
-                                    title: 'title'
+                                    ]
                                 }
-                            ],
-                            template_type: 'generic'
-                        },
-                        type: 'template'
+                            ]
+                        }
                     }
             }
             
