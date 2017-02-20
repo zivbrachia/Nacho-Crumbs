@@ -1268,7 +1268,7 @@ function buildElement(message) {
 }
 
 function cardJsonFacebook(infoId, response) {
-    
+    /*
     let facebook = {};
     facebook.attachment = {};
     facebook.attachment.type = 'template';
@@ -1280,19 +1280,25 @@ function cardJsonFacebook(infoId, response) {
     for (let i=0; i<(len); i++) {
         facebook.attachment.payload.elements.push(buildElement(response.result.fulfillment.messages[i]));
     }
+    */
     
-    /*
     let facebook = {
         attachment: {
+            type: "template",
             payload: {
+                template_type: "generic",
                 elements: [
                     {
+                        image_url: "https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fnacho1024.png?alt=media&token=40ea8306-8bf6-4810-b2b0-f45678438746",
+                        item_url: "https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fnacho1024.png?alt=media&token=40ea8306-8bf6-4810-b2b0-f45678438746",
+                        subtitle: "פיסת מידע",
+                        title: "פיסת מידע",
                         buttons: [
                             {
-                                title: "tall",
+                                title: "compact",
                                 type: "web_url",
                                 url: "https://nacho-crumbs.herokuapp.com/info/",
-                                webview_height_ratio: "tall"
+                                webview_height_ratio: "compact"
                             },
                             {
                                 title: "full",
@@ -1301,23 +1307,17 @@ function cardJsonFacebook(infoId, response) {
                                 webview_height_ratio: "full"
                             },
                             {
-                                type:"postback",
-                                title:"Start Chatting",
-                                payload:"DEVELOPER_DEFINED_PAYLOAD"
+                                title: "המשך",
+                                type: "postback",
+                                payload: "המשך"
                             }
-                        ],
-                        image_url: "http://www.example.com/image.png",
-                        item_url: "https://nacho-crumbs.herokuapp.com/info/",
-                        subtitle: "פיסת מידע",
-                        title: "פיסת מידע"
+                        ]
                     }
-                ],
-                template_type: "generic"
-            },
-            type: "template"
+                ]
+            }
         }
     }
-    */        
+
     return facebook;
 }
 
