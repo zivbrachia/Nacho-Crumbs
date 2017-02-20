@@ -1252,6 +1252,33 @@ function buildButton(text, url) {
 }
 
 function buildElement(message) {
+    let element = {
+                        image_url: "https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fnacho1024.png?alt=media&token=40ea8306-8bf6-4810-b2b0-f45678438746",
+                        item_url: "https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fnacho1024.png?alt=media&token=40ea8306-8bf6-4810-b2b0-f45678438746",
+                        subtitle: "פיסת מידע",
+                        title: "פיסת מידע",
+                        buttons: []
+                    }
+    element.buttons.push({
+                                title: "compact",
+                                type: "web_url",
+                                url: "https://nacho-crumbs.herokuapp.com/info/",
+                                webview_height_ratio: "compact"
+                            },
+                            {
+                                title: "full",
+                                type: "web_url",
+                                url: "https://nacho-crumbs.herokuapp.com/info/",
+                                webview_height_ratio: "full"
+                            },
+                            {
+                                title: "המשך",
+                                type: "postback",
+                                payload: "המשך"
+                            });
+
+    return element;
+    /*
     let element = {};
     //
     if (message.type!==1) {
@@ -1265,6 +1292,7 @@ function buildElement(message) {
     element.title = 'פיסת מידע';
     //
     return element;
+    */
 }
 
 function cardJsonFacebook(infoId, response) {
@@ -1281,7 +1309,18 @@ function cardJsonFacebook(infoId, response) {
         facebook.attachment.payload.elements.push(buildElement(response.result.fulfillment.messages[i]));
     }
     */
-    
+    let facebook = {
+        attachment: {
+            type: "template",
+            payload: {
+                template_type: "generic",
+                elements: []
+            }
+        }
+    };
+
+    facebook.attachment.payload.elements.push(buildElement(response.result.fulfillment.messages[0]));
+    /*
     let facebook = {
         attachment: {
             type: "template",
@@ -1317,7 +1356,7 @@ function cardJsonFacebook(infoId, response) {
             }
         }
     }
-
+    */
     return facebook;
 }
 
