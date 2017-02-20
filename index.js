@@ -1217,9 +1217,21 @@ function cardJsonTelegram(infoId, response) {
 function buildButtons(buttons) {
     let len = buttons.length;
     let buttonsResult = [];
-    for (let i=0; i<(len); i++) {
-        buttonsResult.push(buildButton(buttons[i]['text'], buttons[i].postback));
-    }
+    buttonsResult.push({
+                "title": "compact",
+                "type": "web_url",
+                "url": "https://nacho-crumbs.herokuapp.com/info/",
+                "webview_height_ratio": "compact"
+              });
+    buttonsResult.push({
+                "title": "compact",
+                "type": "postback",
+                "payload": "compact"
+              });
+    
+    //for (let i=0; i<(len); i++) {
+    //    buttonsResult.push(buildButton(buttons[i]['text'], buttons[i].postback));
+    //}
     
     
     return buttonsResult;
@@ -1247,10 +1259,10 @@ function buildElement(message) {
     }
     element.buttons = [];
     element.buttons.push(buildButtons(message.buttons));
-    element.image_url = message.imageUrl;
-    element.item_url = message.imageUrl;
-    element.subtitle = message.subtitle;
-    element.title = message.title;
+    element.image_url = "https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fnacho1024.png?alt=media&token=40ea8306-8bf6-4810-b2b0-f45678438746";
+    element.item_url = "https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fnacho1024.png?alt=media&token=40ea8306-8bf6-4810-b2b0-f45678438746";
+    element.subtitle = 'פיסת מידע';
+    element.title = 'פיסת מידע';
     //
     return element;
 }
