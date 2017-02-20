@@ -1236,8 +1236,8 @@ function buildElement(message) {
     let element = {
         image_url: "https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fnacho1024.png?alt=media&token=40ea8306-8bf6-4810-b2b0-f45678438746",
         item_url: "https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fnacho1024.png?alt=media&token=40ea8306-8bf6-4810-b2b0-f45678438746",
-        subtitle: "פיסת מידע",
-        title: "פיסת מידע",
+        subtitle: message.subtitle,
+        title: message.title,
         buttons: []
     }
     //
@@ -1265,43 +1265,6 @@ function cardJsonFacebook(infoId, response) {
         facebook.attachment.payload.elements.push(buildElement(response.result.fulfillment.messages[i]));
     }
     
-    /*
-    let facebook = {
-        attachment: {
-            type: "template",
-            payload: {
-                template_type: "generic",
-                elements: [
-                    {
-                        image_url: "https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fnacho1024.png?alt=media&token=40ea8306-8bf6-4810-b2b0-f45678438746",
-                        item_url: "https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fnacho1024.png?alt=media&token=40ea8306-8bf6-4810-b2b0-f45678438746",
-                        subtitle: "פיסת מידע",
-                        title: "פיסת מידע",
-                        buttons: [
-                            {
-                                title: "compact",
-                                type: "web_url",
-                                url: "https://nacho-crumbs.herokuapp.com/info/",
-                                webview_height_ratio: "compact"
-                            },
-                            {
-                                title: "full",
-                                type: "web_url",
-                                url: "https://nacho-crumbs.herokuapp.com/info/",
-                                webview_height_ratio: "full"
-                            },
-                            {
-                                title: "המשך",
-                                type: "postback",
-                                payload: "המשך"
-                            }
-                        ]
-                    }
-                ]
-            }
-        }
-    }
-    */
     return facebook;
 }
 
