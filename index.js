@@ -1292,6 +1292,26 @@ function cardJsonFacebook(infoId, response) {
                         item_url: "https://nacho-crumbs.herokuapp.com/info/",
                         subtitle: "פיסת מידע",
                         title: "פיסת מידע"
+                    },
+                    {
+                        buttons: [
+                            {
+                                title: "compact",
+                                type: "web_url",
+                                url: "https://nacho-crumbs.herokuapp.com/info/",
+                                webview_height_ratio: "compact"
+                            },
+                            {
+                                title: "full",
+                                type: "web_url",
+                                url: "https://nacho-crumbs.herokuapp.com/info/",
+                                webview_height_ratio: "full"
+                            }
+                        ],
+                        image_url: "http://www.example.com/image.png",
+                        item_url: "https://nacho-crumbs.herokuapp.com/info/",
+                        subtitle: "פיסת מידע",
+                        title: "פיסת מידע"
                     }
                 ],
                 template_type: "generic"
