@@ -1289,7 +1289,8 @@ function cardJsonFacebook(infoId, response) {
                             },
                             {
                                 type:"postback",
-                                title:"Start Chatting"
+                                title:"Start Chatting",
+                                payload:"DEVELOPER_DEFINED_PAYLOAD"
                                 //title: "full1",
                                 //type: "web_url",
                                 //url: "https://nacho-crumbs.herokuapp.com/info/",
