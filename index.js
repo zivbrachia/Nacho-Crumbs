@@ -6,7 +6,7 @@ let EventEmitter = require('events').EventEmitter;
 let apiai = require('apiai');
 let webRequest = require('request');
 let schedule = require('node-schedule');
-//require('./config.js');
+require('./config.js');
 let firebase = require('firebase-admin');
 let db_credential = require('./serviceAccountKey.js');
 let BotanalyticsMiddleware = require('botanalytics-microsoftbotframework-middleware').BotanalyticsMiddleware({
@@ -1214,29 +1214,6 @@ function cardJsonTelegram(infoId, response) {
     return telegram;
 }
 
-function buildButtons(buttons) {
-    let len = buttons.length;
-    let buttonsResult = [];
-    buttonsResult.push({
-                "title": "compact",
-                "type": "web_url",
-                "url": "https://nacho-crumbs.herokuapp.com/info/",
-                "webview_height_ratio": "compact"
-              });
-    buttonsResult.push({
-                "title": "compact",
-                "type": "postback",
-                "payload": "compact"
-              });
-    
-    //for (let i=0; i<(len); i++) {
-    //    buttonsResult.push(buildButton(buttons[i]['text'], buttons[i].postback));
-    //}
-    
-    
-    return buttonsResult;
-}
-
 function buildButton(text, url) {
     let button = {};
     button.title = text;
@@ -1252,63 +1229,27 @@ function buildButton(text, url) {
 }
 
 function buildElement(message) {
-    let element = {
-                        image_url: "https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fnacho1024.png?alt=media&token=40ea8306-8bf6-4810-b2b0-f45678438746",
-                        item_url: "https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fnacho1024.png?alt=media&token=40ea8306-8bf6-4810-b2b0-f45678438746",
-                        subtitle: "פיסת מידע",
-                        title: "פיסת מידע",
-                        buttons: []
-                    }
-    element.buttons.push({
-                                title: "compact",
-                                type: "web_url",
-                                url: "https://nacho-crumbs.herokuapp.com/info/",
-                                webview_height_ratio: "compact"
-                            },
-                            {
-                                title: "full",
-                                type: "web_url",
-                                url: "https://nacho-crumbs.herokuapp.com/info/",
-                                webview_height_ratio: "full"
-                            },
-                            {
-                                title: "המשך",
-                                type: "postback",
-                                payload: "המשך"
-                            });
-
-    return element;
-    /*
-    let element = {};
-    //
     if (message.type!==1) {
-        return element;
+        return {};
     }
-    element.buttons = [];
-    element.buttons.push(buildButtons(message.buttons));
-    element.image_url = "https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fnacho1024.png?alt=media&token=40ea8306-8bf6-4810-b2b0-f45678438746";
-    element.item_url = "https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fnacho1024.png?alt=media&token=40ea8306-8bf6-4810-b2b0-f45678438746";
-    element.subtitle = 'פיסת מידע';
-    element.title = 'פיסת מידע';
     //
+    let element = {
+        image_url: "https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fnacho1024.png?alt=media&token=40ea8306-8bf6-4810-b2b0-f45678438746",
+        item_url: "https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fnacho1024.png?alt=media&token=40ea8306-8bf6-4810-b2b0-f45678438746",
+        subtitle: "פיסת מידע",
+        title: "פיסת מידע",
+        buttons: []
+    }
+    //
+    let len = message.buttons.length;
+    for (let i=0; i<(len); i++) {
+        element.buttons.push(buildButton(message.buttons[i]['text'], message.buttons[i]['postback']));    
+    }
+    
     return element;
-    */
 }
 
 function cardJsonFacebook(infoId, response) {
-    /*
-    let facebook = {};
-    facebook.attachment = {};
-    facebook.attachment.type = 'template';
-    facebook.attachment.payload = {};
-    facebook.attachment.payload.template_type = 'generic';
-    facebook.attachment.payload.elements = [];
-    //
-    let len = response.result.fulfillment.messages.length;
-    for (let i=0; i<(len); i++) {
-        facebook.attachment.payload.elements.push(buildElement(response.result.fulfillment.messages[i]));
-    }
-    */
     let facebook = {
         attachment: {
             type: "template",
@@ -1318,8 +1259,12 @@ function cardJsonFacebook(infoId, response) {
             }
         }
     };
-
-    facebook.attachment.payload.elements.push(buildElement(response.result.fulfillment.messages[0]));
+    //
+    let len = response.result.fulfillment.messages.length;
+    for (let i=0; i<(len); i++) {
+        facebook.attachment.payload.elements.push(buildElement(response.result.fulfillment.messages[i]));
+    }
+    
     /*
     let facebook = {
         attachment: {
