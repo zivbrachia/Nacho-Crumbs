@@ -1229,9 +1229,10 @@ function buildButton(text, url) {
     let button = {};
     button.title = text;
     if (url==='' ){
-        button.type = 'postback'    
+        button.type = 'postback';
+        button.payload = text;
     } else {
-        button.type = 'web_url'
+        button.type = 'web_url';
         button.url = url;
         button.webview_height_ratio =  'tall';
     }
@@ -1255,7 +1256,7 @@ function buildElement(message) {
 }
 
 function cardJsonFacebook(infoId, response) {
-    /*
+    
     let facebook = {};
     facebook.attachment = {};
     facebook.attachment.type = 'template';
@@ -1267,8 +1268,8 @@ function cardJsonFacebook(infoId, response) {
     for (let i=0; i<(len); i++) {
         facebook.attachment.payload.elements.push(buildElement(response.result.fulfillment.messages[i]));
     }
-    */
     
+    /*
     let facebook = {
         attachment: {
             payload: {
@@ -1291,10 +1292,6 @@ function cardJsonFacebook(infoId, response) {
                                 type:"postback",
                                 title:"Start Chatting",
                                 payload:"DEVELOPER_DEFINED_PAYLOAD"
-                                //title: "full1",
-                                //type: "web_url",
-                                //url: "https://nacho-crumbs.herokuapp.com/info/",
-                                //webview_height_ratio: "full"
                             }
                         ],
                         image_url: "http://www.example.com/image.png",
@@ -1308,7 +1305,7 @@ function cardJsonFacebook(infoId, response) {
             type: "template"
         }
     }
-            
+    */        
     return facebook;
 }
 
