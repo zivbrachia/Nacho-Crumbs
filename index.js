@@ -626,18 +626,12 @@ function buildMessages(response, address, source) {
                         }
                     };
                     facebook.attachment.payload.elements.push(buildElement(message));
+                    msg = new builder.Message().address(address).sourceEvent(facebook);
+                    messages.push(msg);
                 }
                 else if (address.channelId==='telegram') {
 
                 }
-    //
-    let len = response.result.fulfillment.messages.length;
-    for (let i=0; i<(len); i++) {
-        facebook.attachment.payload.elements.push(buildElement(response.result.fulfillment.messages[i]));
-    }
-                }
-                msg = new builder.Message().address(address).sourceEvent(cardJson(address, response));
-                messages.push(msg);
                 break;
             case 2: // Quick replies
                 if (address.channelId==='facebook') {
