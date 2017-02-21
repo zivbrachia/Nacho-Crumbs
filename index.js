@@ -575,12 +575,13 @@ function buildMessages(response, address, source) {
     let textResponseToQuickReplies = '';
     let messages = [];
     //
-    if (response.result.action==='input.info_expand') {
+    /*if (response.result.action==='input.info_expand') {
         let msg = {};
         msg = new builder.Message().address(address).sourceEvent(cardJson('zzz', address, response));
         messages.push(msg);
         return messages;
     }
+    */
     //
     for (let i=0; i<(len); i++) {
         let message = response.result.fulfillment.messages[i];
@@ -615,18 +616,8 @@ function buildMessages(response, address, source) {
                 }
                 break;
             case 1: // Card
-                console.log('Card');
-                /*
-                let msg = new builder.Message(session).address(session.address).attachments([new builder.HeroCard(session).title("פיסת מידע").subtitle("פיסת מידע").text("זאת פיסת מידע בנושא השאלה שמכווינה לתשובה")
-                .images([builder.CardImage.create(session, 'https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcR0vB7eKzjzcDXW8Z-BaE5YoNnG3kgQ0S2lEg14-_3fWu88GkwIyQ')
-                ]).buttons([
-                    builder.CardAction.dialogAction(session, "info", "showInfo", "המשך לפיסת מידע"),
-                    builder.CardAction.dialogAction(session, "info", "repeatQuestion", "חזור על השאלה"),
-                    builder.CardAction.dialogAction(session, "info", "goToNextQuestion", "המשך לשאלה הבאה")
-                ])
-                ]);
+                msg = new builder.Message().address(address).sourceEvent(cardJson(address, response));
                 messages.push(msg);
-                */
                 break;
             case 2: // Quick replies
                 if (address.channelId==='facebook') {
@@ -1035,8 +1026,8 @@ function sendNextQuestion(response, address, userData) {
     //
     if (actionsForSending.indexOf(response.result.action)>=0) {
         if (userData.questionCounter===3) {
-            //lotteryInformation(address, userData, timeout);
-            lotteryQuestion(address, userData, timeout);
+            lotteryInformation(address, userData, timeout);
+            //lotteryQuestion(address, userData, timeout);
         } else {
             lotteryQuestion(address, userData, timeout);
         }
@@ -1182,13 +1173,13 @@ function buildIntexCatalog(intent) {
     return temp;
 }
 
-function cardJson(infoId, address, response) {
+function cardJson(address, response) {
     let payload = {};
     //
     //if (address.channelId === 'facebook') {
-        payload.facebook = cardJsonFacebook(infoId, response);
+        payload.facebook = cardJsonFacebook(response);
     //} else if (address.channelId === 'telegram') {
-        payload.telegram = cardJsonTelegram(infoId, response);
+        payload.telegram = cardJsonTelegram(response);
     //}
     console.log(JSON.stringify(payload));
     return payload;
@@ -1249,7 +1240,7 @@ function buildElement(message) {
     return element;
 }
 
-function cardJsonFacebook(infoId, response) {
+function cardJsonFacebook(response) {
     let facebook = {
         attachment: {
             type: "template",
