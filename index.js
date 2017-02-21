@@ -575,12 +575,12 @@ function buildMessages(response, address, source) {
     let textResponseToQuickReplies = '';
     let messages = [];
     //
-    /*if (response.result.action==='input.info_expand') {
+    if (response.result.action==='input.info_expand') {
         let msg = {};
         msg = new builder.Message().address(address).sourceEvent(cardJson('zzz', address, response));
         messages.push(msg);
         return messages;
-    }*/
+    }
     //
     for (let i=0; i<(len); i++) {
         let message = response.result.fulfillment.messages[i];
@@ -615,6 +615,7 @@ function buildMessages(response, address, source) {
                 }
                 break;
             case 1: // Card
+            /*
                 if (address.channelId==='facebook') {
                     let facebook = {
                         attachment: {
@@ -634,6 +635,7 @@ function buildMessages(response, address, source) {
                 else if (address.channelId==='telegram') {
 
                 }
+                */
                 break;
             case 2: // Quick replies
                 if (address.channelId==='facebook') {
