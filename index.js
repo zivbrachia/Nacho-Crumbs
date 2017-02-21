@@ -577,7 +577,7 @@ function buildMessages(response, address, source) {
     //
     if (response.result.action==='input.info_expand') {
         let msg = {};
-        msg = new builder.Message().address(address).sourceEvent(cardJson('zzz', address, response));
+        msg = new builder.Message().address(address).sourceEvent(cardJson(address, response));
         messages.push(msg);
         return messages;
     }
