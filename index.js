@@ -580,8 +580,7 @@ function buildMessages(response, address, source) {
         msg = new builder.Message().address(address).sourceEvent(cardJson('zzz', address, response));
         messages.push(msg);
         return messages;
-    }
-    */
+    }*/
     //
     for (let i=0; i<(len); i++) {
         let message = response.result.fulfillment.messages[i];
@@ -616,6 +615,27 @@ function buildMessages(response, address, source) {
                 }
                 break;
             case 1: // Card
+                if (address.channelId==='facebook') {
+                    let facebook = {
+                        attachment: {
+                            type: "template",
+                            payload: {
+                                template_type: "generic",
+                                elements: []
+                            }
+                        }
+                    };
+                    facebook.attachment.payload.elements.push(buildElement(message));
+                }
+                else if (address.channelId==='telegram') {
+
+                }
+    //
+    let len = response.result.fulfillment.messages.length;
+    for (let i=0; i<(len); i++) {
+        facebook.attachment.payload.elements.push(buildElement(response.result.fulfillment.messages[i]));
+    }
+                }
                 msg = new builder.Message().address(address).sourceEvent(cardJson(address, response));
                 messages.push(msg);
                 break;
