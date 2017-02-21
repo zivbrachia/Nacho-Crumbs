@@ -626,7 +626,9 @@ function buildMessages(response, address, source) {
                         }
                     };
                     facebook.attachment.payload.elements.push(buildElement(message));
-                    msg = new builder.Message().address(address).sourceEvent(facebook);
+                    let payload = {};
+                    payload.facebook;
+                    msg = new builder.Message().address(address).sourceEvent(payload);
                     messages.push(msg);
                 }
                 else if (address.channelId==='telegram') {
