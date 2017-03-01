@@ -23,11 +23,22 @@ firebase.initializeApp({
 // setup firebase reference
 let ref = firebase.database().ref();
 let questions = null;
+let questionIndex = {};
 ref.child('category').child('dna').once("value", function(snapshot) {
-        questions = snapshot.val()
-        //dbEventEmitter.emit('eventRequest', 'QUESTION_2', address, null, userData || {});    
-        }, function (errorObject) {
-            console.log("The read failed: " + errorObject.code);
+        questions = snapshot.val();
+        //
+        let objKeys = Object.keys(questions);
+        objKeys.forEach(function(subCategory) {
+            let objkeys1 = Object.keys(questions[subCategory]);
+            objkeys1.forEach(function(question) {
+                questionIndex[question] = questionIndex[question] || {};
+                questionIndex[question].category = 'dna';
+                questionIndex[question].subCategory = questionIndex[question].subCategory || [];
+                questionIndex[question].subCategory.push(subCategory);
+            });
+        });
+}, function (errorObject) {
+    console.log("The read failed: " + errorObject.code);
 });
 
 let app = apiai(process.env.APIAI_CLIENT_ACCESS_TOKEN);
@@ -54,7 +65,7 @@ server.get('/info/:infoId', function (req, res, next) {
     let heading1 = infoId;
     let lead1 = infoId;
     //
-    let html = fs.readFileSync(__dirname + '/public/info.html', 'utf8');
+    let html = fs.readFileSync(__dirname + '/public/info_layout.html', 'utf8');
     //
     html = html.replace('{title}', title);
     html = html.replace('{header1}', header1);
@@ -74,6 +85,97 @@ server.get('/build', function(req, res, next) {
     getAllIntents();
     res.send('build intent');
     next();
+});
+//
+server.get('/user/:channelId/:userId', function(req, res, next) {
+    let channelId = req.params.channelId;
+    let userId = req.params.userId;
+    //
+    ref.child('users').child(channelId).child(userId).child('questions').once("value", function(snapshot) {
+        let branches = snapshot.val();
+        if (branches===null) return;
+        let branchesFlat = {};
+        branchesFlat.questions = [];
+        branchesFlat.total = {};
+        ////////////////////////////////////////////////////
+        branches.forEach(function(question) {
+            let questionFlat = {};
+            Object.keys(question.timeline).forEach( function (timestamp) {
+                let singleAction = question.timeline[timestamp];
+                if (singleAction===undefined) return;
+                //
+                if (!!questionFlat['duration']) {
+                    questionFlat['duration'] = timestamp - questionFlat['timestamp'] + questionFlat['duration'];
+                    questionFlat['timestamp'] = timestamp
+                } else {
+                    questionFlat['duration'] = 1;
+                    questionFlat['timestamp'] = timestamp;
+                }
+                if (singleAction.action==='input.question') {
+                    questionFlat['name'] = singleAction.data.intentName;
+                    questionFlat['id'] = singleAction.data.intentId;
+                    questionFlat['category'] = questionIndex[singleAction.data.intentId].category;
+                    questionFlat['subCategory'] = questionIndex[singleAction.data.intentId].subCategory;
+                    questionFlat['question'] = (questionFlat['question'] || 0) + 1;
+                    //
+                    branchesFlat.total[questionFlat['category']] = branchesFlat.total[questionFlat['category']] || {};
+                    branchesFlat.total[questionFlat['category']].questions = (branchesFlat.total[questionFlat['category']].questions || 0) + 1;
+                    branchesFlat.total[questionFlat['category']].duration = (branchesFlat.total[questionFlat['category']].duration || 0) + questionFlat['duration'];
+                    branchesFlat.total[questionFlat['category']].subCategory = branchesFlat.total[questionFlat['category']].subCategory || {};
+                    //
+                    questionFlat['subCategory'].forEach(function (sub) {
+                        branchesFlat.total[questionFlat['category']]['subCategory'][sub] = branchesFlat.total[questionFlat['category']]['subCategory'][sub] || {};
+                        branchesFlat.total[questionFlat['category']]['subCategory'][sub].questions = (branchesFlat.total[questionFlat['category']]['subCategory'][sub].questions || 0) + 1;
+                        branchesFlat.total[questionFlat['category']]['subCategory'][sub].duration = (branchesFlat.total[questionFlat['category']]['subCategory'][sub].duration || 0) + questionFlat['duration'];
+                    });
+                } else if (singleAction.action==='output.information') {
+                    questionFlat['info_name'] = singleAction.data.intentName;
+                    questionFlat['info_id'] = singleAction.data.intentId;
+                    questionFlat['info'] = (questionFlat['info'] || 0) + 1;
+                } else if (singleAction.action==='input.wrong') {
+                    questionFlat['wrong'] = (questionFlat['wrong'] || 0) + 1;
+                    branchesFlat.total[questionFlat['category']].wrong = (branchesFlat.total[questionFlat['category']].wrong || 0) + 1;
+                    questionFlat['subCategory'].forEach(function (sub) {
+                        branchesFlat.total[questionFlat['category']]['subCategory'][sub].wrong = (branchesFlat.total[questionFlat['category']]['subCategory'][sub].wrong || 0) + 1;
+                    });
+                } else if (singleAction.action==='input.right') {
+                    questionFlat['right'] = (questionFlat['right'] || 0) + 1;
+                    branchesFlat.total[questionFlat['category']].right = (branchesFlat.total[questionFlat['category']].right || 0) + 1;
+                    questionFlat['subCategory'].forEach(function (sub) {
+                        branchesFlat.total[questionFlat['category']]['subCategory'][sub].right = (branchesFlat.total[questionFlat['category']]['subCategory'][sub].right || 0) + 1;
+                    });
+                } else if (singleAction.action==='input.explain_last_question') {
+                    questionFlat['explain'] = (questionFlat['explain'] || 0) + 1;
+                    branchesFlat.total[questionFlat['category']].explain = (branchesFlat.total[questionFlat['category']].explain || 0) + 1;
+                    questionFlat['subCategory'].forEach(function (sub) {
+                        branchesFlat.total[questionFlat['category']]['subCategory'][sub].explain = (branchesFlat.total[questionFlat['category']]['subCategory'][sub].explain || 0) + 1;
+                    });
+                } else if (singleAction.action==='input.info_expand') {
+                    questionFlat['expand'] = (questionFlat['expand'] || 0) + 1;
+                }
+            }, this);
+            branchesFlat.questions.push(questionFlat);
+        });
+        //res.send(branchesFlat);
+        //next();
+        //
+        let array2DCat = [['['+'"ID"', '"X"', '"Y"','"subject"', '"questions"'+']']];    // for google chart
+        Object.keys(branchesFlat.total).forEach( function (cat, i) {
+            let category = ['["'+cat+ '"', i+1, 5, '"' + cat + '"', branchesFlat.total[cat].questions  +']'];
+            array2DCat.push(category);
+        }, this);
+        
+        
+        let html = fs.readFileSync(__dirname + '/public/chart.html', 'utf8');
+        //
+        html = html.replace('{array2DCat}', '[' + array2DCat.toString() + ']');
+        //html = html.replace('{sub_replication}', branchesFlat.total.dna.subCategory.replication.questions);
+        //html = html.replace('{sub_structure}', branchesFlat.total.dna.subCategory.structure.questions);
+        //html = html.replace('{heading1}', heading1);
+        //html = html.replace('{lead1}', lead1);
+        res.end(html);
+        
+    });
 });
 
 server.get('/start/:channelId/:eventName', function(req, res, next) {
@@ -103,21 +205,6 @@ function readAddresses(req, res, next, channelId, eventName) {
             next();
             console.log("The read failed: " + errorObject.code);
     });
-    /*
-    ref.child('users').child('facebook').child('1386701014687144').once("value", function(snapshot) {
-        let address = snapshot.val().address;
-        if (address===null) return;
-        //
-        let userData = snapshot.val().userData;
-        if (userData===null) return;
-        ////////////////////////////////////////////////////
-        let eventName = req.params.eventName;//"QUESTION_2";
-        dbEventEmitter.emit('eventRequest', eventName, address, null, userData);
-        ////////////////////////////////////////////////////
-        }, function (errorObject) {
-            console.log("The read failed: " + errorObject.code);
-    });
-    */
 }
   
 // Create chat bot
@@ -196,28 +283,8 @@ server.post('/webhook', function create(req, res, next) {   // webhook
                 }, function (errorObject) {
                     console.log("The read failed: " + errorObject.code);
                 });
-                /*
-                speech = '';
-
-                if (requestBody.result.fulfillment) {
-                    speech += requestBody.result.fulfillment.speech;
-                    speech += ' ';
-                }
-
-                if (requestBody.result.action) {
-                    speech += 'action: ' + requestBody.result.action;
-                }
-                */
             }
         }
-
-        //console.log('result: ', speech);
-
-        //return res.json({
-        //    speech: speech,
-        //    displayText: speech,
-        //    source: 'apiai-webhook-sample'
-        //});
     } catch (err) {
         console.error("Can't process request", err);
 
@@ -298,6 +365,18 @@ intents.matches(/^reset userData/i, function (session){
 
 intents.matches(/^show userData/i, function (session){
      session.send(JSON.stringify(session.userData));
+});
+
+intents.matches(/^db/i, function (session){
+    let refUser = ref.child('users').child(session.message.address.channelId).child(session.message.address.user.id).child('questions');
+    //refUser.update({[session.message.text.split(" ")[1]]: session.message.text.split(" ")[2]});
+    let now = new Date();
+    refUser = refUser.child(session.message.text.split(" ")[1]);
+    refUser = refUser.child('timeline');
+    let timeline = {};
+    timeline[now.getTime()] = {};
+    timeline[now.getTime()].action = session.message.text.split(" ")[2];
+    refUser.update(timeline);
 });
 
 intents.matches(/^hello/i, function (session){
@@ -386,7 +465,6 @@ userProfileEventEmitter.on('facebook_user_profile', function(session, request) {
 //
 dbEventEmitter.on('eventRequest', function (eventName, address, timeout, userData, session) {
     console.error('setTimeout ' + eventName + ' : '+ timeout || process.env.TIMEOUT_QUESTION_MS);
-    console.log('userData ' + userData.questionCounter);
     setTimeout(function () {
         let event = {
             name : eventName,
@@ -420,16 +498,6 @@ dbEventEmitter.on('eventRequest', function (eventName, address, timeout, userDat
                 let userData = JSON.parse(response.result.parameters.userData);
                 apiaiEventEmitter.emit('apiai_response', address, response, userData || {}, "eventRequest");
             });
-            /*
-            if (session!==false) {
-                let textRequest = setTextRequest(session);
-                textRequest.end();
-                return;
-            }
-            let address = JSON.parse(response.result.parameters.address);
-            let userData = JSON.parse(response.result.parameters.userData);
-            apiaiEventEmitter.emit('apiai_response', address, response, userData || {}, "eventRequest");
-            */
         });
 
         eventRequest.on('error', function(error) {
@@ -447,14 +515,32 @@ function chatFlow(connObj, response, userData, source) {
     let actionsReplyByGender = ['input.right', 'input.wrong'];
     let actionsMetaQuestion = ['input.metaQuestion', 'input.explain_last_question'];
     let actionsSendingNextQuestion = ['input.skip', 'input.next', 'input.category'];
-    let actionsReturnQuestion = ['input.return_question', 'input.hint_replay'];  //, 'input.clue', 'input.hint'];
+    let actionsReturnQuestion = ['input.return_question', 'input.hint_reply'];  //, 'input.clue', 'input.hint'];
     let actionsStop = ['input.break_setting'];
     let actionExpand = ['input.info_expand'];
+    let actionNotSaveTimeline = ['output.wrong_reply', 'output.right_reply', 'input.hint_reply'];
     //
     let address = connObj;
     if (connObj.constructor.name=='Session') {
         address = connObj.message.address;
     }
+    //
+    let jsonForTimeLine = {};
+    if (intentAction==='input.question') {
+        jsonForTimeLine.intentId = response.result.metadata.intentId;
+        jsonForTimeLine.intentName = response.result.metadata.intentName;
+    } else if (intentAction==='input.unknown') {
+        jsonForTimeLine.resolvedQuery = response.result.resolvedQuery;
+    } else if (intentAction==='input.wrong') {
+        jsonForTimeLine.resolvedQuery = response.result.resolvedQuery;
+    } else if (intentAction==='output.information') {
+        jsonForTimeLine.intentId = response.result.metadata.intentId;
+        jsonForTimeLine.intentName = response.result.metadata.intentName;
+    } else if (intentAction==='input.break_setting') {
+        jsonForTimeLine.duration = response.result.parameters.duration;
+        jsonForTimeLine.time = response.result.parameters.time;
+    }
+    //
     //
     if ((!userData.intent)&(intentAction!=='input.welcome')) { // first time ever - sends default welcome intent - whatever the user says
         dbEventEmitter.emit('eventRequest', 'WELCOME', address, 0, userData || {}, false);
@@ -462,6 +548,16 @@ function chatFlow(connObj, response, userData, source) {
     } else if ((!!userData.intent)&(intentAction==='input.welcome')) {
         dbEventEmitter.emit('eventRequest', 'Welcome_Second_Time', address, 0, userData || {}, false);
         return;
+    } 
+    //
+    if (!!userData.questionCounter) {
+        if (actionNotSaveTimeline.indexOf(intentAction)===(-1)) {
+            if (connObj.constructor.name==='Session') {
+                saveTimeLine(connObj.message.address.channelId, connObj.message.address.user.id, userData.questionCounter, intentAction, jsonForTimeLine);
+            } else {
+                saveTimeLine(connObj.channelId, connObj.user.id, userData.questionCounter, intentAction, jsonForTimeLine);
+            }
+        }
     }
     //
     if (actionsReplyByGender.indexOf(intentAction)>=0) {
@@ -508,7 +604,6 @@ function chatFlow(connObj, response, userData, source) {
 
     if (intentAction==='profile.first_name') {  // TODO for MVP
         dbEventEmitter.emit('eventRequest', 'Gender', address, 4000, userData || {}, false);
-        console.log("action: "+ intentAction);
     }
 }
 
@@ -588,6 +683,9 @@ function buildMessages(response, address, source) {
         //console.log("message type: " + message.type + " " + source);
         switch(message.type) {
             case 0: // Text response
+                if (response.result.action==='input.break') {
+                    message.speech = message.speech.replace('CET', 'https://nacho-crumbs.herokuapp.com/user/' + address.channelId + '/' + address.user.id)
+                }
                 if (message.speech.indexOf('[>>]') !== (-1)) {
                         textResponseToQuickReplies = message.speech.split('[>>]')[0];
                         break;
@@ -615,27 +713,6 @@ function buildMessages(response, address, source) {
                 }
                 break;
             case 1: // Card
-            /*
-                if (address.channelId==='facebook') {
-                    let facebook = {
-                        attachment: {
-                            type: "template",
-                            payload: {
-                                template_type: "generic",
-                                elements: []
-                            }
-                        }
-                    };
-                    facebook.attachment.payload.elements.push(buildElement(message));
-                    let payload = {};
-                    payload.facebook;
-                    msg = new builder.Message().address(address).sourceEvent(payload);
-                    messages.push(msg);
-                }
-                else if (address.channelId==='telegram') {
-
-                }
-                */
                 break;
             case 2: // Quick replies
                 if (address.channelId==='facebook') {
@@ -654,19 +731,6 @@ function buildMessages(response, address, source) {
                         quick_reply.payload = message.replies[i]; //"SOMETHING_SOMETHING";
                         facebookObj.facebook.quick_replies.push(quick_reply);
                     }
-                    /*
-                    if (response.result.action=="input.question") {
-                        let addQuickReplies = ['רמז', 'דלג'];
-                        len = addQuickReplies.length;
-                        for(let i=0; i<len; i++) {
-                            let quick_reply = {};
-                            quick_reply.content_type = "text";
-                            quick_reply.title = addQuickReplies[i];
-                            quick_reply.payload = addQuickReplies[i]; //"SOMETHING_SOMETHING";
-                            facebookObj.facebook.quick_replies.push(quick_reply);
-                        }
-                    }
-                    */
                     msg = new builder.Message().address(address).sourceEvent(facebookObj);
                     messages.push(msg);
 
@@ -724,19 +788,6 @@ function buildMessages(response, address, source) {
                 break;
             case 4: // Custom Payload
                 let payload = message.payload;
-                /*if (response.result.action=="input.clue") {
-                    let addQuickReplies = ['רמז נוסף', 'חזור לשאלה', 'דלג'];
-                    payload.facebook.quick_replies = [];
-                    len = addQuickReplies.length;
-                    for(let i=0; i<len; i++) {
-                        let quick_reply = {};
-                        quick_reply.content_type = "text";
-                        quick_reply.title = addQuickReplies[i];
-                        quick_reply.payload = addQuickReplies[i]; //"SOMETHING_SOMETHING";
-                        payload.facebook.quick_replies.push(quick_reply);
-                    }
-                }
-                */
                 msg = new builder.Message().address(address).sourceEvent(payload);
                 messages.push(msg);
                 break;
@@ -751,176 +802,6 @@ apiaiEventEmitter.on('apiai_response', function (connObj, response, userData, so
         });
         //chatFlow(connObj, response, userData, source)
         return;
-        // connObj = session/address, response = from api.ai, userData = mainly if address sent, source = for debug
-        /*
-        let address = connObj;
-        if (connObj.constructor.name=='Session') {
-            address = connObj.message.address;
-            if (connObj.userData || 'empty'==='empty') {
-                connObj.userData = userData;
-            } else if (connObj.userData.user_profile || 'empty'==='empty') {
-                connObj.userData.user_profile = userData.user_profile;
-            }
-            if (connObj.userData.intent||'empty'!=='empty') {   // when userData.intent dont exists
-                console.log("userData: " + connObj.userData.event || 'empty');
-            }
-        }
-        let messages = [];
-        console.log("action: " + response.result.action);
-        //
-        let eventName = null;
-        switch(response.result.action) {
-            case 'input.right':
-                eventName = 'RIGHT_ANSWER_REPLY_FEMALE';
-                if ((connObj.userData.user_profile || 'empty'==='empty')||(connObj.userData.user_profile.gender==='male')) {
-                    eventName = 'RIGHT_ANSWER_REPLY_MALE';
-                }
-                break;
-            case 'input.wrong':
-                eventName = 'WRONG_ANSWER_REPLY_FEMALE';
-                if ((connObj.userData.user_profile || 'empty'==='empty')||(connObj.userData.user_profile.gender==='male')) {
-                    eventName = 'WRONG_ANSWER_REPLY_MALE';
-                }
-                break;
-            default:
-                eventName = null;
-                break;
-        }
-        if (eventName!==null) {
-            dbEventEmitter.emit('eventRequest', eventName, address, process.env.TIMEOUT_REPLY, userData || {});
-            return;
-        }
-        //
-        let len = response.result.fulfillment.messages.length;
-        let textResponseToQuickReplies = '';
-        for (let i=0; i<(len); i++) {
-            let message = response.result.fulfillment.messages[i];
-            let msg = {};
-            console.log("message type: " + message.type + " " + source);
-            switch(message.type) {
-                case 0: // Text response
-                    if (message.speech.indexOf('[>>]') !== (-1)) {
-                            textResponseToQuickReplies = message.speech.split('[>>]')[0];
-                            break;
-                    }
-                    if (address.channelId==='telegram') {
-                        msg = new builder.Message().address(address).sourceEvent({
-                            telegram:{
-                                method: 'sendMessage',
-                                parameters: {
-                                    text: message.speech,
-                                    parse_mode: 'Markdown',
-                                    reply_markup: {
-                                        hide_keyboard: true
-                                    }
-                                }
-                            }
-                        });
-                        messages.push(msg);
-                    }
-                    else if (address.channelId==='facebook') {
-                        let text = message.speech.replace(/\n/g, '\n\r');
-                        msg = new builder.Message().address(address).text((response.result.action=="input.question")? ("שאלה:" + " " + text):(text));
-                        messages.push(msg);
-                    }
-                    break;
-                case 1: // Card
-                    /*
-                    let msg = new builder.Message(session).address(session.address).attachments([new builder.HeroCard(session).title("פיסת מידע").subtitle("פיסת מידע").text("זאת פיסת מידע בנושא השאלה שמכווינה לתשובה")
-                    .images([builder.CardImage.create(session, 'https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcR0vB7eKzjzcDXW8Z-BaE5YoNnG3kgQ0S2lEg14-_3fWu88GkwIyQ')
-                    ]).buttons([
-                        builder.CardAction.dialogAction(session, "info", "showInfo", "המשך לפיסת מידע"),
-                        builder.CardAction.dialogAction(session, "info", "repeatQuestion", "חזור על השאלה"),
-                        builder.CardAction.dialogAction(session, "info", "goToNextQuestion", "המשך לשאלה הבאה")
-                    ])
-                    ]);
-                    messages.push(msg);
-                    *//*
-                    break;
-                case 2: // Quick replies
-                    if (address.channelId==='facebook') {
-                        let facebookObj = {};
-                        facebookObj.facebook = {};
-                        facebookObj.facebook['text'] = (response.result.action=="input.question")? ("שאלה:" + " " + message.title):(message.title);
-                        if (message.title.indexOf('[>>]') !== (-1)) {
-                            facebookObj.facebook['text'] = textResponseToQuickReplies.replace(/\n/g, '\n\r');
-                        }
-                        facebookObj.facebook.quick_replies = [];
-                        let len = message.replies.length;
-                        for(let i=0; i<len; i++) {
-                            let quick_reply = {};
-                            quick_reply.content_type = "text";
-                            quick_reply.title = message.replies[i];
-                            quick_reply.payload = message.replies[i]; //"SOMETHING_SOMETHING";
-                            facebookObj.facebook.quick_replies.push(quick_reply);
-                        } 
-                        
-                        msg = new builder.Message().address(address).sourceEvent(facebookObj);
-                        messages.push(msg);
-
-                    } else if (address.channelId==='telegram') {
-                        let len = message.replies.length;
-                        if (message.title.indexOf('[>>]') !== (-1)) {
-                            if (textResponseToQuickReplies === '') {
-                                break;
-                            } else {
-                                message.title = textResponseToQuickReplies;
-                            }
-                        }
-                        //let quick_reply = [];
-                        //let actions = [];
-                        let reply_markup = [];
-                        for(let i=0; i<len; i++) {
-                            //quick_reply.push(message.replies[i]);
-                            //actions.push(new builder.CardAction().title(message.replies[i]).value(message.replies[i]));
-                            reply_markup.push([{text: message.replies[i]}]);
-                        }
-                        /////////////////////
-                        //let keyboard = new builder.Keyboard().buttons(actions);
-                        //let msg = new builder.Message().address(address).text(message.title).attachments([keyboard]); buttons
-                        msg = new builder.Message().address(address).sourceEvent({
-                            telegram:{
-                                method: 'sendMessage',
-                                parameters: {
-                                    text: message.title,
-                                    parse_mode: 'Markdown',
-                                    reply_markup: {
-                                        //hide_keyboard: true
-                                        keyboard:
-                                        //[
-                                            reply_markup
-                                            
-                                        //]
-                                    }
-                                }
-                            }
-                        });
-                        
-                        /////////////////////
-                        messages.push(msg);
-                    }
-                    //
-                    //messages.push(msg);
-                    break;
-                case 3: // Card
-                    msg = new builder.Message().address(address)
-                        .attachments([{
-                            contentType: "image/jpeg",
-                            contentUrl: 'https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcR0vB7eKzjzcDXW8Z-BaE5YoNnG3kgQ0S2lEg14-_3fWu88GkwIyQ'
-                    }]);
-                    messages.push(msg);
-                    break;
-                case 4: // Custom Payload
-                    msg = new builder.Message().address(address).sourceEvent(message.payload);
-                    messages.push(msg);
-                    break;
-            }
-        }
-        //
-        sendMessages(response, connObj, messages, userData || {});
-        inputMetaQuestion(response, connObj);
-        sendNextQuestion(response, address, userData || {});
-      */  
 });
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 function sendMessages(response, session, messages, userData) {
@@ -935,9 +816,22 @@ function sendMessages(response, session, messages, userData) {
             updateUserData = sendMessageProactive(message, response);
         }
     }
-    //
     if (updateUserData) {
         writeCurrentUserData(session, updateUserData);
+    }
+    //
+    //saveLastQuestionFlow(session, userData.question)
+    //
+}
+
+function saveLastQuestionFlow(session, question) {
+    let now = new Date();
+    let today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    //
+    if (session.constructor.name=='Session') {
+        let refUser = ref.child('users').child(session.message.address.channelId).child(session.message.address.user.id).child('questions').child(today.getTime()).child(now.getTime()).push(response.result.metadata);
+    } else {
+        let refUser = ref.child('users').child(session.channelId).child(session.user.id).child('questions').child(today.getTime).child(now.getTime).push(response.result.metadata);
     }
 }
 
@@ -963,17 +857,18 @@ function updateUserDataIntent(message, response) {
     if ((response.result.action=='input.question')&(response.result.metadata.intentName.indexOf(process.env.APIAI_QUESTION_TEMPLATE) !== (-1))) {
         let eventName = response.result.metadata.intentName;
         message.userData.event = eventName;
+        //
         message.userData.questionCounter = getCounter(message.userData.questionCounter);
     }
 }
 
 function getCounter(number) {
     if ((!number)&(number!==0)) {
-        return 0;
+        return 1;
     }
-    if (number>3) {
-        return 0;
-    }
+    //if (number>3) {
+    //    return 0;
+    //}
     return (number+1);
 }
 
@@ -997,6 +892,7 @@ function updateUserData(response, session) {
     if ((response.result.action=='input.question')&(response.result.metadata.intentName.indexOf(process.env.APIAI_QUESTION_TEMPLATE) !== (-1))) {
         let eventName = response.result.metadata.intentName;
         session.userData.event = eventName;
+        //
         session.userData.questionCounter = getCounter(session.userData.questionCounter);
     }
     //
@@ -1027,7 +923,7 @@ function writeCurrentUserData(session, userData) {
 }
 
 function sendLastQuestion(response, connObj, userData) {
-    if (response.result.action==='input.hint_replay') {
+    if (response.result.action==='input.hint_reply') {
         dbEventEmitter.emit('eventRequest', userData.event.replace('Ask', 'HintAsk'), connObj.message.address, process.env.TIMEOUT_REPLY, userData || {}, false);
     } else {
         dbEventEmitter.emit('eventRequest', userData.event, connObj.message.address, process.env.TIMEOUT_REPLY, userData || {}, false);
@@ -1043,7 +939,7 @@ function sendNextQuestion(response, address, userData) {
     }
     //
     if (actionsForSending.indexOf(response.result.action)>=0) {
-        if (userData.questionCounter===3) {
+        if ((userData.questionCounter % 3)  === 0) {
             lotteryInformation(address, userData, timeout);
             //lotteryQuestion(address, userData, timeout);
         } else {
@@ -1071,7 +967,7 @@ function lotteryInformation(address, userData, timeout) {
     */
     let eventName = 'Information_1';
     //userData.event = 'Information_1';
-    userData.questionCounter = 0;
+    userData.questionCounter = getCounter(userData.questionCounter);
     dbEventEmitter.emit('eventRequest', eventName, address, timeout, userData || {}, false);    
     
 }
@@ -1091,6 +987,16 @@ function lotteryQuestion(address, userData, timeout) {
     //eventName = "QUESTION_7";
     userData.event = eventName;
     userData.questionCounter = getCounter(userData.questionCounter);
+    if (!!userData.question===false) { 
+        userData.question = {};
+        userData.question.intentId = intent;
+        userData.question.intentName = eventName;
+    }
+    else if (userData.question.intentId!==intent) {
+        userData.question = {};
+        userData.question.intentId = intent;
+        userData.question.intentName = eventName;
+    }
     dbEventEmitter.emit('eventRequest', eventName, address, timeout, userData || {}, false);    
     
 }
@@ -1110,8 +1016,6 @@ function inputMetaQuestion(response, session) {
 }
 
 function eventRequestEmit(session) {
-    console.log('session.userData.event:' + session.userData.event || '');
-    //console.log(userData || '');
     dbEventEmitter.emit('eventRequest', session.userData.event || '', session.message.address, 0, session.userData, false);
 }
 
@@ -1199,7 +1103,6 @@ function cardJson(address, response) {
     //} else if (address.channelId === 'telegram') {
         payload.telegram = cardJsonTelegram(response);
     //}
-    console.log(JSON.stringify(payload));
     return payload;
 }
 
@@ -1277,4 +1180,13 @@ function cardJsonFacebook(response) {
     return facebook;
 }
 
-
+function saveTimeLine(channelId, userId, questionPosition, action, metaData) {
+    let refUser = ref.child('users').child(channelId).child(userId).child('questions').child(questionPosition).child('timeline');;
+    let now = new Date();
+    //
+    let timeline = {};
+    timeline[now.getTime()] = {};
+    timeline[now.getTime()]['action'] = action;
+    timeline[now.getTime()]['data'] = metaData;
+    refUser.update(timeline);
+}

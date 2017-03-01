@@ -1,0 +1,46 @@
+<html>
+  <head>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript">
+      google.charts.load('current', {'packages':['corechart']});
+      google.charts.setOnLoadCallback(drawSeriesChart);
+
+    function drawSeriesChart() {
+      var data = google.visualization.arrayToDataTable({array2DCat});
+      /*var data = google.visualization.arrayToDataTable([
+        ['ID', 'X', 'Y','נושא', 'שאלות'],
+        ['1',    1,              5,      {cat1},  0],
+        ['2',    2,              5,      {cat2},         0],
+        ['3',    3,              5,      {cat3},         0],
+        ['4',    4,              5,      'מבנה DNA ושכפולו',    {dna}],
+        ['5',    5,              5,         'תהליכי חלוקה: מיטוזה ומיוזה',         0],
+        ['6',    6,              5,       'תורשה מנדלית',    0],
+        ['7',    7,              5,      'תורשה רפואה וחברה',    0]
+      ]);*/
+
+      /*var data1 = google.visualization.arrayToDataTable([
+        ['A', 'B', 'C','D', 'E'],
+        ['1',    1,              5,      'שכפול ותעתוק',  {sub_replication}],
+        ['2',    2,              5,      'מבנה',  {sub_structure}]
+      ]);*/
+
+      var options = {
+        title: "נושאים שנלמדו בעזרת נאצ'ו",
+        hAxis: {title: ''},
+        vAxis: {title: ''},
+        bubble: {textStyle: {fontSize: 12}}
+      };
+
+      var chart = new google.visualization.BubbleChart(document.getElementById('series_chart_div'));
+      chart.draw(data, options);
+      google.visualization.events.addListener(chart, 'select', function() {
+        var row = chart.getSelection()[0].row;
+        chart.draw(data1, options);
+      });
+    }
+    </script>
+  </head>
+  <body>
+    <div id="series_chart_div" style="width: 900px; height: 500px;"></div>
+  </body>
+</html>
