@@ -169,7 +169,7 @@ server.get('/user/:channelId/:userId', function(req, res, next) {
         let html = fs.readFileSync(__dirname + '/public/chart.html', 'utf8');
         //
         html = html.replace('{array2DCat}', '[' + array2DCat.toString() + ']');
-        //html = html.replace('{sub_replication}', branchesFlat.total.dna.subCategory.replication.questions);
+        html = html.replace('{json}', JSON.stringify(branchesFlat));
         //html = html.replace('{sub_structure}', branchesFlat.total.dna.subCategory.structure.questions);
         //html = html.replace('{heading1}', heading1);
         //html = html.replace('{lead1}', lead1);
@@ -593,7 +593,23 @@ function chatFlow(connObj, response, userData, source) {
         return;
     }
     //
-
+    if (response.result.action==='input.sub_category') {
+        if (response.result.parameters.subcategory!=='') {
+            userData.category = 'dna';
+            userData.sub_category = response.result.parameters.subcategory;
+        } else {
+            response.result.fulfillment.messages[0].title = response.result.fulfillment.messages[0].speech;
+            response.result.fulfillment.messages[0].type = 2
+            response.result.fulfillment.messages[0].replies = [];
+            let objKeys = Object.keys(questions);
+            response.result.fulfillment.messages[0].replies.push('כללי');
+            objKeys.forEach(function(subCategory) {
+                response.result.fulfillment.messages[0].replies.push(subCategory);
+            });
+        } 
+        
+    }
+    //
     let messages = buildMessages(response, address, source);
     sendMessages(response, connObj, messages, userData || {});
 
@@ -743,17 +759,11 @@ function buildMessages(response, address, source) {
                             message.title = textResponseToQuickReplies;
                         }
                     }
-                    //let quick_reply = [];
-                    //let actions = [];
                     let reply_markup = [];
                     for(let i=0; i<len; i++) {
-                        //quick_reply.push(message.replies[i]);
-                        //actions.push(new builder.CardAction().title(message.replies[i]).value(message.replies[i]));
                         reply_markup.push([{text: message.replies[i]}]);
                     }
-                    /////////////////////
-                    //let keyboard = new builder.Keyboard().buttons(actions);
-                    //let msg = new builder.Message().address(address).text(message.title).attachments([keyboard]); buttons
+                    ////////////////////
                     msg = new builder.Message().address(address).sourceEvent({
                         telegram:{
                             method: 'sendMessage',

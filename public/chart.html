@@ -25,7 +25,7 @@
       ]);*/
 
       var options = {
-        title: "נושאים שנלמדו בעזרת נאצ'ו",
+        title: " נושאים שנלמדו בעזרת נאצ'ו",
         hAxis: {title: ''},
         vAxis: {title: ''},
         bubble: {textStyle: {fontSize: 12}}
@@ -35,6 +35,7 @@
       chart.draw(data, options);
       google.visualization.events.addListener(chart, 'select', function() {
         var row = chart.getSelection()[0].row;
+        
         chart.draw(data1, options);
       });
     }
@@ -42,5 +43,6 @@
   </head>
   <body>
     <div id="series_chart_div" style="width: 900px; height: 500px;"></div>
+    <div>{json}</div>
   </body>
 </html>
