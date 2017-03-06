@@ -57,13 +57,13 @@ server.get('/', function(req, res, next) {
     next();
 });
 
-server.get('/info/:infoId', function (req, res, next) {
+server.get('/info/:channelId/:userId/:infoId', function (req, res, next) {
     let infoId = req.params.infoId || 'empty';
-    let title = infoId;
-    let header1 = infoId;
-    let header2 = infoId;
-    let heading1 = infoId;
-    let lead1 = infoId;
+    let title = 'DNA';
+    let header1 = 'aaa';
+    let header2 = 'bbb';
+    let heading1 = 'ccc';
+    let lead1 = "למה תכונת היציבות חשובה? כי מולקולות ה-DNA צריכות להישאר במשך כל חיי התאים ואף לעבור בהורים לצאצאים כמעט מבלי להשתנות ככה החומר התורשתי נשמר כמו שצריך!";
     //
     let html = fs.readFileSync(__dirname + '/public/info_layout.html', 'utf8');
     //
@@ -610,6 +610,13 @@ function chatFlow(connObj, response, userData, source) {
         
     }
     //
+    if (response.result.action==='input.info_expand') {
+        response.result.fulfillment.messages[0].buttons[1].postback + '/' + address.channelId + '/' + address.user.id + '/' + userData.intent.id;
+        response.result.fulfillment.messages[0].imageUrl = 'https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/info%2Fdino.jpg?alt=media&token=9384a546-a3c6-4554-ac40-c26ad6a3bc26';
+        response.result.fulfillment.messages[0].subtitle = 'ה-DNA הוא אחת המולקולות היציבות ביותר בעולם.';
+        response.result.fulfillment.messages[0].title = 'DNA';
+    }
+    //
     let messages = buildMessages(response, address, source);
     sendMessages(response, connObj, messages, userData || {});
 
@@ -987,8 +994,14 @@ function lotteryQuestion(address, userData, timeout) {
         return;
     }
     let objKeys = Object.keys(questions)
-    let subCategoryLen = objKeys.length;
-    let subCategory = objKeys[Math.floor(Math.random() * subCategoryLen)];
+    let subCategory = null;
+    userData.sub_category = userData.sub_category || 'general';
+    if (userData.sub_category==='general') {
+        let subCategoryLen = objKeys.length;
+        subCategory = objKeys[Math.floor(Math.random() * subCategoryLen)];
+    } else {
+        subCategory = userData.sub_category;
+    }
     let objkeys1 = Object.keys(questions[subCategory]);
     let questionLen = objkeys1.length;
     let intent = objkeys1[Math.floor(Math.random() * questionLen)];
