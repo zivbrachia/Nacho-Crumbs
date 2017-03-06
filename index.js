@@ -58,21 +58,45 @@ server.get('/', function(req, res, next) {
 });
 
 server.get('/info/:channelId/:userId/:infoId', function (req, res, next) {
-    let infoId = req.params.infoId || 'empty';
-    let title = 'DNA';
-    let header1 = 'aaa';
-    let header2 = 'bbb';
-    let heading1 = 'ccc';
-    let lead1 = "למה תכונת היציבות חשובה? כי מולקולות ה-DNA צריכות להישאר במשך כל חיי התאים ואף לעבור בהורים לצאצאים כמעט מבלי להשתנות ככה החומר התורשתי נשמר כמו שצריך!";
-    //
-    let html = fs.readFileSync(__dirname + '/public/info_layout.html', 'utf8');
-    //
-    html = html.replace('{title}', title);
-    html = html.replace('{header1}', header1);
-    html = html.replace('{header2}', header2);
-    html = html.replace('{heading1}', heading1);
-    html = html.replace('{lead1}', lead1);
-    res.end(html);
+    ref.child('information').once("value", function(snapshot) {
+        let title = 'empty';
+        let header1 = 'empty';
+        let header2 = 'empty';
+        let heading1 = 'empty';
+        let lead1 = 'empty';
+        let image = "https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fnacho1024.png?alt=media&token=40ea8306-8bf6-4810-b2b0-f45678438746";
+        //
+        let information = snapshot.val();
+        let category = Object.keys(information);
+        category.forEach(function(subCategory) {
+            let infoSub = information[subCategory];
+            let infoSubArray = Object.keys(infoSub);
+            infoSubArray.forEach(function(info) {
+                let info1 = infoSub[info];
+                if ((!!info1[req.params.infoId])===true) {
+                    title = info1[req.params.infoId].expand.title;
+                    header1 = info1[req.params.infoId].expand.title;
+                    header2 = info1[req.params.infoId].expand.subtitle;
+                    heading1 = info1[req.params.infoId].expand.heading;
+                    lead1 = info1[req.params.infoId].expand.lead;
+                    image = info1[req.params.infoId].expand.image;
+                }
+                else {
+                    
+                }
+                
+            });
+        });
+        let html = fs.readFileSync(__dirname + '/public/info_layout.html', 'utf8');
+        //
+        html = html.replace('{title}', title);
+        html = html.replace('{header1}', header1);
+        html = html.replace('{header2}', header2);
+        html = html.replace('{heading1}', heading1);
+        html = html.replace('{lead1}', lead1);
+        html = html.replace('{image}', image);
+        res.end(html);
+    });
 });
 
 server.get('/public/:folder/:fileName', function (req, res, next) {
@@ -611,10 +635,12 @@ function chatFlow(connObj, response, userData, source) {
     }
     //
     if (response.result.action==='input.info_expand') {
-        response.result.fulfillment.messages[0].buttons[1].postback + '/' + address.channelId + '/' + address.user.id + '/' + userData.intent.id;
+        console.log(response.result.fulfillment.messages[0].buttons[1]);
+        response.result.fulfillment.messages[0].buttons[1].postback = response.result.fulfillment.messages[0].buttons[1].postback + address.channelId + '/' + address.user.id + '/' + userData.intent.id;
         response.result.fulfillment.messages[0].imageUrl = 'https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/info%2Fdino.jpg?alt=media&token=9384a546-a3c6-4554-ac40-c26ad6a3bc26';
         response.result.fulfillment.messages[0].subtitle = 'ה-DNA הוא אחת המולקולות היציבות ביותר בעולם.';
         response.result.fulfillment.messages[0].title = 'DNA';
+        console.log(response.result.fulfillment.messages[0]);
     }
     //
     let messages = buildMessages(response, address, source);

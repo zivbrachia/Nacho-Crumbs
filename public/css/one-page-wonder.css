@@ -53,7 +53,7 @@ body {
 }
 
 .featurette-heading {
-    font-size: 50px;
+    font-size: 20px;
 }
 
 footer {
@@ -126,7 +126,7 @@ footer {
     }
 
     .featurette-heading {
-        font-size: 25px;
+        font-size: 16px;
     }
 }
 
