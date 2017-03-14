@@ -47,6 +47,7 @@ bot.dialog('/', function (session) {
     //apiai.eventRequest(INVOKE_EVENT, session);
 });
 //
+/*
 let userSays = 'שאלה3';
 let questionOutput = 'מהן המילים החסרות בתרשים?';
 let qId = 3
@@ -62,16 +63,88 @@ answerOutput = "רמז לשאלה " + qId
 let clue = apiai.createIntentClue('Question_'+qId+'_Clue', 'Question_' + qId, 'Question_' + qId, 'input.question.clue', answerOutput);
 answerOutput = 'דלג לשאלה הבאה';
 let skip = apiai.createIntentSkip('Question_'+qId+'_Skip', 'Question_' + qId, 'Question_' + qId, 'input.question.skip', answerOutput);
+*/
 
+function build() {
+    let sentence = '';
+    let arr = {};
+    arr.templates = [];
+    arr.userSays = [];
+    sentence = 'האם אתה אמיתי';
+    arr.templates.push(sentence);
+    arr.userSays.push(buildUserSays(sentence));
+    sentence = 'אתה ילד אמיתי';
+    arr.templates.push(sentence);
+    arr.userSays.push(buildUserSays(sentence));
+    sentence = 'אתה קיים';
+    arr.templates.push(sentence);
+    arr.userSays.push(buildUserSays(sentence));
+    sentence = 'אתה מחשב';
+    arr.templates.push(sentence);
+    arr.userSays.push(buildUserSays(sentence));
+    sentence = 'אתה בן אדם אמיתי';
+    arr.templates.push(sentence);
+    arr.userSays.push(buildUserSays(sentence));
+    sentence = 'אתה לא אמיתי';
+    arr.templates.push(sentence);
+    arr.userSays.push(buildUserSays(sentence));
+    return arr;
+}
+
+function buildUserSays(sentence) {
+    let userSays = {
+        isTemplate: false,
+        count: 0,
+        data: [{
+            text: sentence
+        }]
+    };
+    return userSays;
+}
+
+let arr = build();
 let options = {};
 let client = apiai.createNewIntent(options);
-let arr = [];
-arr.push(question);
-arr.push(answer);
-arr.push(wrong);
-arr.push(clue);
-arr.push(skip);
-client.post(options, arr, function(err, req, res, obj) {
+//
+let intent = {
+    templates: arr.templates,
+    userSays: arr.userSays,
+    name: 'Figure_Reality',
+    auto: true,
+    contexts: [],
+    responses: [
+        {
+            resetContexts: false,
+            affectedContexts: [],
+            parameters: [],
+            messages: [
+                {
+                    type: 0,
+                    speech: 'אני רק צאטבוט'
+                }
+            ]
+        }
+    ],
+    priority: 500000,
+    cortanaCommand: {
+        navigateOrService: 'NAVIGATE',
+        target: ''
+    },
+    webhookUsed: false,
+    webhookForSlotFilling: false,
+    fallbackIntent: false,
+    events: []
+};
+
+//let question = require("./apiai_template/intents/Question_X.json");
+//question.name = 'Figure_Reality';
+//question.responses[0].affectedContexts[0].name = outputContext;
+//question.userSays[0].data[0].text = 'האם אתה אמיתי';
+//question.responses[0].messages[0].speech = 'לא, אני צאט בוט';
+//let arr = [];
+//arr.push(question);
+
+client.post(options, intent, function(err, req, res, obj) {
     console.log(JSON.parse(res.body));
 });
 //client.post(options, answer, function(err, req, res, obj) {
@@ -89,7 +162,7 @@ question.responses[0].messages[0].speech = questionOutput;
 
 
 */
-console.log(question.events[0].name);
+//console.log(question.events[0].name);
 
 /*
 var options = {};
