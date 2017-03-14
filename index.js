@@ -158,19 +158,24 @@ server.get('/user/:channelId/:userId', function(req, res, next) {
                     questionFlat['info'] = (questionFlat['info'] || 0) + 1;
                 } else if (singleAction.action==='input.wrong') {
                     questionFlat['wrong'] = (questionFlat['wrong'] || 0) + 1;
+                    branchesFlat.total[questionFlat['category']] = branchesFlat.total[questionFlat['category']] || {};
                     branchesFlat.total[questionFlat['category']].wrong = (branchesFlat.total[questionFlat['category']].wrong || 0) + 1;
+                    questionFlat['subCategory'] = questionFlat['subCategory'] || [];
                     questionFlat['subCategory'].forEach(function (sub) {
                         branchesFlat.total[questionFlat['category']]['subCategory'][sub].wrong = (branchesFlat.total[questionFlat['category']]['subCategory'][sub].wrong || 0) + 1;
                     });
                 } else if (singleAction.action==='input.right') {
                     questionFlat['right'] = (questionFlat['right'] || 0) + 1;
+                    branchesFlat.total[questionFlat['category']] = branchesFlat.total[questionFlat['category']] || {};
                     branchesFlat.total[questionFlat['category']].right = (branchesFlat.total[questionFlat['category']].right || 0) + 1;
                     questionFlat['subCategory'].forEach(function (sub) {
                         branchesFlat.total[questionFlat['category']]['subCategory'][sub].right = (branchesFlat.total[questionFlat['category']]['subCategory'][sub].right || 0) + 1;
                     });
                 } else if (singleAction.action==='input.explain_last_question') {
                     questionFlat['explain'] = (questionFlat['explain'] || 0) + 1;
+                    branchesFlat.total[questionFlat['category']] = branchesFlat.total[questionFlat['category']] || {};
                     branchesFlat.total[questionFlat['category']].explain = (branchesFlat.total[questionFlat['category']].explain || 0) + 1;
+                    questionFlat['subCategory'] = questionFlat['subCategory'] || [];
                     questionFlat['subCategory'].forEach(function (sub) {
                         branchesFlat.total[questionFlat['category']]['subCategory'][sub].explain = (branchesFlat.total[questionFlat['category']]['subCategory'][sub].explain || 0) + 1;
                     });
@@ -599,14 +604,28 @@ function chatFlow(connObj, response, userData, source) {
     } else if (actionsStop.indexOf(intentAction)>=0) {
         let date = new Date();
         if (response.result.parameters.duration) {
+            response.result.parameters.duration.amount = response.result.parameters.duration.amount || sumAmountDuration(response.result.parameters.duration);
             switch(response.result.parameters.duration.unit) {
                 case 'sec':
                     date.setSeconds(date.getSeconds() + response.result.parameters.duration.amount);
-                break;
+                    break;
+                case 'min':
+                    date.setMinutes(date.getMinutes() + response.result.parameters.duration.amount);
+                    break;
+                case 'hour':
+                    date.setHours(date.getHours() + response.result.parameters.duration.amount);
+                    break;
                 default:
                     date.setSeconds(date.getSeconds() + 60);
                 break;
             }    
+        }
+        else if (response.result.parameters.time) {
+            let hour = response.result.parameters.time.split(":");
+            let time = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.setHours(hour[0]), date.setMinutes(hour[1]), date.setSeconds(hour[2]));
+            if (time.getTime()<date.getTime()) {
+                time.setDate(time.getDate() + 1);
+            }
         }
         let j = schedule.scheduleJob(date, function(){
             connObj.send("היי.... חזרתי");
@@ -636,7 +655,7 @@ function chatFlow(connObj, response, userData, source) {
     //
     if (response.result.action==='input.info_expand') {
         console.log(response.result.fulfillment.messages[0].buttons[1]);
-        response.result.fulfillment.messages[0].buttons[1].postback = response.result.fulfillment.messages[0].buttons[1].postback + address.channelId + '/' + address.user.id + '/' + userData.intent.id;
+        response.result.fulfillment.messages[0].buttons[1].postback = response.result.fulfillment.messages[0].buttons[1].postback + address.channelId + '/' + address.user.id + '/' + '2a39d02f-b37a-438b-bdcd-0f24a468219b';
         response.result.fulfillment.messages[0].imageUrl = 'https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/info%2Fdino.jpg?alt=media&token=9384a546-a3c6-4554-ac40-c26ad6a3bc26';
         response.result.fulfillment.messages[0].subtitle = 'ה-DNA הוא אחת המולקולות היציבות ביותר בעולם.';
         response.result.fulfillment.messages[0].title = 'DNA';
@@ -1117,7 +1136,7 @@ function buildToxonomy(intent, metaData) {
         metaData[temp.category.name][temp.category.subcategory[i].name][intent.id] = {
             'name': intent.name,
             'events': intent.events,
-            'level' : temp.level
+            'level' : temp.level || 1
         };
     }
 }
@@ -1238,4 +1257,19 @@ function saveTimeLine(channelId, userId, questionPosition, action, metaData) {
     timeline[now.getTime()]['action'] = action;
     timeline[now.getTime()]['data'] = metaData;
     refUser.update(timeline);
+}
+
+function sumAmountDuration(duration) {
+    let amount = 0;
+    Object.keys(duration).forEach(function(digit, i) {
+        if (digit==='unit') {
+
+        } else if (digit==='amount') {
+
+        } else {
+            amount = amount + parseInt(duration[digit]);
+        }
+    });
+    //
+    return amount;
 }
