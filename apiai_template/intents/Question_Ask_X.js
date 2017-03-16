@@ -2,12 +2,12 @@ module.exports = {questionTemplate};
 
 function questionTemplate(QuestionNumber, Category, SubCategory, questionText, rightAnswer, wrongAnswer1, wrongAnswer2, wrongAnswer3) {
     let questionTemplate = {
-        "templates" : [QuestionNumber + "שאלה"],
+        "templates" : ["שאלה" + QuestionNumber],
         "userSays" : [
             {
                 "data" : [
                     {
-                        "text" : QuestionNumber + "שאלה"
+                        "text" : "שאלה" + QuestionNumber
                     }
                 ],
                 "isTemplate" : false,
