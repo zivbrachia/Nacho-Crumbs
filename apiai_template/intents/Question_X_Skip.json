@@ -1,0 +1,52 @@
+{
+  "userSays": [
+    {
+      "data": [
+        {
+          "text": "דלג",
+          "alias": "SkipCommand",
+          "meta": "@SkipCommand",
+          "userDefined": true
+        }
+      ],
+      "isTemplate": false,
+      "count": 0
+    }
+  ],
+  "name": "Question_1_Skip",
+  "auto": true,
+  "contexts": [
+    "Question_1"
+  ],
+  "responses": [
+    {
+      "resetContexts": false,
+      "action": "input.question_1.skip",
+      "affectedContexts": [
+        {
+          "name": "Question_1",
+          "lifespan": 1
+        }
+      ],
+      "parameters": [
+        {
+          "dataType": "@SkipCommand",
+          "name": "SkipCommand",
+          "value": "$SkipCommand",
+          "isList": false
+        }
+      ],
+      "messages": [
+        {
+          "type": 0,
+          "speech": "דלג לשאלה הבאה"
+        }
+      ]
+    }
+  ],
+  "priority": 500000,
+  "webhookUsed": false,
+  "webhookForSlotFilling": false,
+  "fallbackIntent": false,
+  "events": []
+}

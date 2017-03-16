@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>title</title>
+
+    <!-- Bootstrap Core CSS -->
+    <link href="/public/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link href="/public/css/one-page-wonder.css" rel="stylesheet">
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+</head>
+
+<body>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+        <div class="container">
+            <!-- Brand and toggle get grouped for better mobile display -->
+            <div class="navbar-header">
+                
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+               
+                <a class="navbar-brand" href="#">Nacho Crumbs - CET</a>
+            </div>
+            <!-- Collect the nav links, forms, and other content for toggling -->
+            
+            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                <ul class="nav navbar-nav">
+                    <li>
+                        <a href="#about">About</a>
+                    </li>
+                    <li>
+                        <a href="#services">Services</a>
+                    </li>
+                    <li>
+                        <a href="#contact">Contact</a>
+                    </li>
+                </ul>
+            </div>
+            <!-- /.navbar-collapse -->
+        </div>
+        <!-- /.container -->
+    </nav>
+
+    <!-- Full Width Image Header -->
+    <header class="header-image">
+        <div class="headline">
+            <div dir="rtl" class="container">
+                <h1>טופס ליצירת שאלה</h1>
+            </div>
+        </div>
+    </header>
+
+    <!-- Page Content -->
+    <div class="container">
+
+        <hr class="featurette-divider">
+
+        <!-- First Featurette -->
+        <div class="featurette" id="about" dir="rtl">
+            <!--###############################################################################################-->
+            <!-- Special version of Bootstrap that only affects content wrapped in .bootstrap-iso -->
+            <link rel="stylesheet" href="https://formden.com/static/cdn/bootstrap-iso.css" /> 
+
+            <!-- Inline CSS based on choices in "Settings" tab -->
+            <style>.bootstrap-iso .formden_header h2, .bootstrap-iso .formden_header p, .bootstrap-iso form{font-family: Arial, Helvetica, sans-serif; color: black}.bootstrap-iso form button, .bootstrap-iso form button:hover{color: white !important;} .asteriskField{color: red;}</style>
+
+            <!-- HTML Form (wrapped in a .bootstrap-iso div) -->
+            <div class="bootstrap-iso">
+            <div class="container-fluid">
+            <div class="row">
+            <div class="col-md-6 col-sm-6 col-xs-12">
+                <form method="post" action="/add_question">
+                <div class="form-group ">
+                <label class="control-label requiredField" for="category">
+                בחר קטגוריה
+                <span class="asteriskField">
+                    *
+                </span>
+                </label>
+                <select class="select form-control" id="category" name="category">
+                <option selected="selected" value="">
+                </option>
+                <option value="DNA">
+                    DNA
+                </option>
+                </select>
+                <span class="help-block" id="hint_category">
+                בחר קטגוריה
+                </span>
+                </div>
+                <div class="form-group ">
+                <label class="control-label requiredField" for="sub_category">
+                בחר תת קטגוריה
+                <span class="asteriskField">
+                    *
+                </span>
+                </label>
+                <select class="select form-control" id="sub_category" name="sub_category">
+                <option selected="selected" value="">
+                </option>
+                <option value="structure">
+                    מבנה
+                </option>
+                <option value="replication">
+                    שכפול
+                </option>
+                </select>
+                <span class="help-block" id="hint_sub_category">
+                בחר תת קטגוריה
+                </span>
+                </div>
+                <div class="form-group ">
+                <label class="control-label requiredField" for="question">
+                שאלה
+                <span class="asteriskField">
+                    *
+                </span>
+                </label>
+                <textarea class="form-control" cols="40" id="question" name="question" placeholder="מה זה ביולוגיה?" rows="10"></textarea>
+                <span class="help-block" id="hint_question">
+                הכנס כאן את השאלה
+                </span>
+                </div>
+                <div class="form-group ">
+                <label class="control-label requiredField" for="right_answer">
+                תשובה נכונה
+                <span class="asteriskField">
+                    *
+                </span>
+                </label>
+                <input class="form-control" id="right_answer" name="right_answer" placeholder="תשובה נכונה" type="text"/>
+                <span class="help-block" id="hint_right_answer">
+                הכנס כאן את התשובה
+                </span>
+                </div>
+                <div class="form-group ">
+                <label class="control-label requiredField" for="wrong_answer_1">
+                תשובה שגויה 1
+                <span class="asteriskField">
+                    *
+                </span>
+                </label>
+                <input class="form-control" id="wrong_answer_1" name="wrong_answer_1" placeholder="תשובה שגויה" type="text"/>
+                <span class="help-block" id="hint_wrong_answer_1">
+                הכנס כאן תשובה שגויה 1
+                </span>
+                </div>
+                <div class="form-group ">
+                <label class="control-label requiredField" for="text">
+                תשובה שגויה 2
+                <span class="asteriskField">
+                    *
+                </span>
+                </label>
+                <input class="form-control" id="wrong_answer_2" name="wrong_answer_2" placeholder="תשובה שגויה" type="text"/>
+                <span class="help-block" id="hint_wrong_answer_2">
+                הכנס כאן תשובה שגויה 2
+                </span>
+                </div>
+                <div class="form-group ">
+                <label class="control-label requiredField" for="wrong_answer_3">
+                תשובה שגויה 3
+                <span class="asteriskField">
+                    *
+                </span>
+                </label>
+                <input class="form-control" id="wrong_answer_3" name="wrong_answer_3" placeholder="תשובה שגויה" type="text"/>
+                <span class="help-block" id="hint_wrong_answer_3">
+                הכנס כאן תשובה שגויה 2
+                </span>
+                </div>
+                <div class="form-group ">
+                <label class="control-label requiredField" for="hint">
+                רמז
+                <span class="asteriskField">
+                    *
+                </span>
+                </label>
+                <textarea class="form-control" cols="40" id="hint" name="hint" placeholder="רמז לפתרון השאלה" rows="10"></textarea>
+                <span class="help-block" id="hint_hint">
+                הכנס כאן רמז לפתרון השאלה
+                </span>
+                </div>
+                <div class="form-group ">
+                <label class="control-label requiredField" for="show_answer">
+                הפתרון לשאלה
+                <span class="asteriskField">
+                    *
+                </span>
+                </label>
+                <textarea class="form-control" cols="40" id="show_answer" name="show_answer" placeholder="הפתרון לתשובה" rows="10"></textarea>
+                <span class="help-block" id="hint_show_answer">
+                הכנס כאן את הפתרון לתשובה
+                </span>
+                </div>
+                <div class="form-group">
+                <div>
+                <button class="btn btn-primary " name="submit" type="submit">
+                    שלח
+                </button>
+                </div>
+                </div>
+                </form>
+            </div>
+            </div>
+            </div>
+            </div>
+
+            <!--###############################################################################################-->
+        </div>
+        
+        <hr class="featurette-divider">
+
+        
+        
+        
+
+       
+
+        <!-- Footer -->
+        
+        <footer>
+            <div class="row">
+                <div class="col-lg-12">
+                    <p>Copyright &copy; Your Website 2014</p>
+                </div>
+            </div>
+        </footer>
+
+    </div>
+    <!-- /.container -->
+
+    <!-- jQuery -->
+    <script src="js/jquery.js"></script>
+
+    <!-- Bootstrap Core JavaScript -->
+    <script src="js/bootstrap.min.js"></script>
+
+</body>
+
+</html>

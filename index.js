@@ -6,7 +6,7 @@ let EventEmitter = require('events').EventEmitter;
 let apiai = require('apiai');
 let webRequest = require('request');
 let schedule = require('node-schedule');
-//require('./config.js');
+require('./config.js');
 let firebase = require('firebase-admin');
 let db_credential = require('./serviceAccountKey.js');
 let BotanalyticsMiddleware = require('botanalytics-microsoftbotframework-middleware').BotanalyticsMiddleware({
@@ -55,6 +55,11 @@ server.listen(process.env.port || process.env.PORT || 3978, function () {
 server.get('/', function(req, res, next) {
     res.send('hello');
     next();
+});
+
+server.get('/add_question', function (req, res, next) {
+    let html = fs.readFileSync(__dirname + '/public/add_question.html', 'utf8');
+    res.end(html);
 });
 
 server.get('/info/:channelId/:userId/:infoId', function (req, res, next) {
@@ -251,7 +256,123 @@ bot.use({
 });
 
 server.use(bodyParser.json());   // webhook
+server.use(bodyParser.urlencoded({extended: true})) // support encoded bodies for add_question post textarea
 server.post('/api/messages', connector.listen());
+
+server.post('/add_question', function create(req, res, next) {
+    createQuestionSession(
+        req.body.category, 
+        req.body.sub_category, 
+        req.body.question,
+        req.body.right_answer,
+        req.body.wrong_answer_1,
+        req.body.wrong_answer_2,
+        req.body.wrong_answer_3,
+        req.body.hint,
+        req.body.show_answer);
+    res.redirect('/add_question', next);
+});
+
+function createQuestionSession(Category, SubCategory, questionText, rightAnswer, wrongAnswer1, wrongAnswer2, wrongAnswer3, hintText, explainText) {
+    ref.child('settings').child('question_number').once("value", function(snapshot) {
+        let QuestionNumber = snapshot.val();
+        if (QuestionNumber===null) {
+            QuestionNumber = 1;
+        }
+        //
+        let client = require('restify').createJsonClient({
+            url: 'https://api.api.ai/v1/intents/'
+        });
+        //
+        let options = {};
+        options.headers = {};
+        options.headers.Authorization = process.env.APIAI_AUTHORIZATION;
+        options.headers['content-type'] = 'application/json; charset=utf-8';
+        //
+        let intentArray = [];
+        //
+        let questionIntent = createIntentQuestionAsk(QuestionNumber, Category, SubCategory, questionText, rightAnswer, wrongAnswer1, wrongAnswer2, wrongAnswer3);
+        let rightAnswerIntent = createIntentRightAnswer(QuestionNumber, rightAnswer);
+        let wrongAnswerIntent = createIntentWrongAnswer(QuestionNumber, wrongAnswer1, wrongAnswer2, wrongAnswer3);
+        let hintIntent = createIntentHint(QuestionNumber, hintText);
+        let explainIntent = createIntentExplain(QuestionNumber, explainText);
+        let hintAskIntent = createIntentHintAsk(QuestionNumber, hintText);
+        let skipIntent = createIntentSkip(QuestionNumber);
+        //
+        intentArray.push(questionIntent);
+        intentArray.push(rightAnswerIntent);
+        intentArray.push(wrongAnswerIntent);
+        intentArray.push(hintIntent);
+        intentArray.push(explainIntent);
+        intentArray.push(hintAskIntent);
+        intentArray.push(skipIntent);
+        //
+        client.post(options, intentArray, function(err, req, res, obj) {
+            //console.log(JSON.parse(res.body));
+            let status = JSON.parse(res.body).status;
+            if (status.code===200) {
+                ref.child('settings').update({"question_number" : QuestionNumber + 1});
+            }
+            else {
+                //res.end(res.body);
+            }
+        });
+        //
+        }, function (errorObject) {
+            res.send('error');
+            next();
+            console.log("The read failed: " + errorObject.code);
+    });
+}
+
+function createIntentSkip(QuestionNumber) {
+    let skip = require("./apiai_template/intents/Question_Skip_X.js").skipTemplate(QuestionNumber);
+    //
+    return skip;
+}
+function createIntentHintAsk(QuestionNumber, hintText) {
+    let hintAsk = require("./apiai_template/intents/Question_HintAsk_X.js").hintAskTemplate(QuestionNumber, hintText);
+    //
+    return hintAsk;
+}
+
+function createIntentExplain(QuestionNumber, explainText) {
+    let explain = require("./apiai_template/intents/Question_Explain_X.js").explainTemplate(QuestionNumber, explainText);
+    //
+    return explain;
+}
+
+function createIntentHint(QuestionNumber, hintText) {
+    let hint = require("./apiai_template/intents/Question_Hint_X.js").hintTemplate(QuestionNumber, hintText);
+    //
+    return hint;
+}
+function createIntentWrongAnswer(QuestionNumber, wrongAnswer1, wrongAnswer2, wrongAnswer3) { 
+    let wrongAnswer = require("./apiai_template/intents/Question_Wrong_X.js").wrongTemplate(QuestionNumber, wrongAnswer1, wrongAnswer2, wrongAnswer3);
+
+    return wrongAnswer;
+}
+
+function createIntentRightAnswer(QuestionNumber, rightAnswer) { 
+    let rightAnswerIntent = require('./apiai_template/intents/Question_Answer_X.js').answerTemplate(QuestionNumber, rightAnswer);
+
+    return rightAnswerIntent;
+}
+
+function createIntentQuestionAsk(QuestionNumber, Category, SubCategory, questionText, rightAnswer, wrongAnswer1, wrongAnswer2, wrongAnswer3) {
+    let arr = [rightAnswer, wrongAnswer1, wrongAnswer2, wrongAnswer3];
+    let newArr = [];
+    let index;
+    let len = arr.length;
+    for (let i=0; i<(len); i++) {
+        index = Math.floor(Math.random() * arr.length);
+        newArr.push(arr[index]);
+        arr.splice(index, 1);
+    }
+    //    
+    let question = require('./apiai_template/intents/Question_Ask_X.js').questionTemplate(QuestionNumber, Category, SubCategory, questionText, newArr[0], newArr[1], newArr[2], newArr[3]);
+    return question;
+}
 
 server.post('/webhook', function create(req, res, next) {   // webhook
     console.log('hook request');
