@@ -540,7 +540,6 @@ intents.onDefault(function (session) {
     let now = new Date();
     console.log('typing... message text: ' + session.message.text + ' userData: ' + session.userData.questionCounter);
     session.sendTyping();
-    session.send(session.userData.intent || {});
     //
     
     let lastSendTime = new Date(session.userData.lastSendTime || now);
@@ -1158,6 +1157,8 @@ function sendMessageBySession(message, response, session) {
     updateUserData(response, session);
     //
     message.userData = session.userData;
+    message.speech = message.speech + " Z " + session.userData.intent;// debug
+    message.title = message.title + " Z " + session.userData.intent;//debug
     session.send(message);
     //
     return session.userData;
