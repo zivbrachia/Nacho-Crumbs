@@ -540,6 +540,7 @@ intents.onDefault(function (session) {
     let now = new Date();
     console.log('typing... message text: ' + session.message.text + ' userData: ' + session.userData.questionCounter);
     session.sendTyping();
+    session.send(session.userData.intent || {});
     //
     
     let lastSendTime = new Date(session.userData.lastSendTime || now);
