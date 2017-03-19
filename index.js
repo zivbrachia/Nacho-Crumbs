@@ -538,7 +538,7 @@ let intents = new builder.IntentDialog();
 
 intents.onDefault(function (session) {
     let now = new Date();
-    console.log('typing... message text: ' + session.message.text + ' userData: ' + session.userData.questionCounter);
+    console.log('typing... message text: ' + session.message.text);
     session.sendTyping();
     //
     
@@ -1129,7 +1129,7 @@ function updateUserDataByMessage(message, response) {
 }
 
 function updateUserDataIntent(message, response) {
-    message.userData.intent = {};
+    message.userData.intent = message.userData.intent || {};
     //
     message.userData.intent.action = response.result.action;
     message.userData.intent.id = response.result.metadata.intentId;
@@ -1163,9 +1163,10 @@ function sendMessageBySession(message, response, session) {
 }
 
 function updateUserData(response, session) {
-    if (session.userData.intent||'empty'==='empty') {
-        session.userData.intent = {};    
-    }
+    //if (session.userData.intent||'empty'==='empty') {
+    //    session.userData.intent = {};    
+    //}
+    session.userData.intent = session.userData.intent || {};
     session.userData.intent.action = response.result.action;
     session.userData.intent.id = response.result.metadata.intentId;
     session.userData.intent.name = response.result.metadata.intentName;
@@ -1222,6 +1223,7 @@ function sendNextQuestion(response, address, userData) {
     if (actionsForSending.indexOf(response.result.action)>=0) {
         if ((userData.questionCounter % 3)  === 0) {
             lotteryInformation(address, userData, timeout);
+            //lotteryQuestion(address, userData, timeout);
         } else {
             lotteryQuestion(address, userData, timeout);
         }
@@ -1236,6 +1238,7 @@ function lotteryInformation(address, userData, timeout) {
     }
     //
     let eventName = null;
+    let intent = null;
     //
     if (userData.sub_category==='general') {
         let objKeys = Object.keys(information);
@@ -1243,28 +1246,19 @@ function lotteryInformation(address, userData, timeout) {
         let subCategory = objKeys[Math.floor(Math.random() * subCategoryLen)];
         let objkeys1 = Object.keys(information[subCategory]);
         let infoLen = objkeys1.length;
-        let intent = objkeys1[Math.floor(Math.random() * infoLen)];
+        intent = objkeys1[Math.floor(Math.random() * infoLen)];
         eventName = information[subCategory][intent]['name'];
     } else {
         let objKeys = Object.keys(information[userData.sub_category]);
         let infoLen = objKeys.length;
-        let intent = objKeys[Math.floor(Math.random() * infoLen)];
+        intent = objKeys[Math.floor(Math.random() * infoLen)];
         eventName = information[userData.sub_category][intent]['name'];
         
     }
-    /*
-    let objKeys = Object.keys(questions)
-    let subCategoryLen = objKeys.length;
-    let subCategory = objKeys[Math.floor(Math.random() * subCategoryLen)];
-    let objkeys1 = Object.keys(questions[subCategory]);
-    let questionLen = objkeys1.length;
-    let intent = objkeys1[Math.floor(Math.random() * questionLen)];
-    let eventName = questions[subCategory][intent].name
-    console.log('eventName :' + eventName);
-    //eventName = "QUESTION_7";
-    */
     //let eventName = 'Information_1';
-    //userData.event = 'Information_1';
+    userData.intent.action = 'output.information';
+    userData.intent.id = intent;
+    userData.intent.name = eventName;
     userData.questionCounter = getCounter(userData.questionCounter);
     dbEventEmitter.emit('eventRequest', eventName, address, timeout, userData || {}, false);    
     
@@ -1274,7 +1268,7 @@ function lotteryQuestion(address, userData, timeout) {
     if ((questions || 'empty') === 'empty') {
         return;
     }
-    let objKeys = Object.keys(questions)
+    let objKeys = Object.keys(questions['sub_category'])
     let subCategory = null;
     userData.sub_category = userData.sub_category || 'general';
     if (userData.sub_category==='general') {
@@ -1287,7 +1281,6 @@ function lotteryQuestion(address, userData, timeout) {
     let questionLen = objkeys1.length;
     let intent = objkeys1[Math.floor(Math.random() * questionLen)];
     let eventName = questions['sub_category'][subCategory].questions[intent].name
-    console.log('eventName :' + eventName);
     //eventName = "QUESTION_7";
     userData.event = eventName;
     userData.questionCounter = getCounter(userData.questionCounter);
