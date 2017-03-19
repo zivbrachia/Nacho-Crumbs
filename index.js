@@ -745,7 +745,7 @@ dbEventEmitter.on('eventRequest', function (eventName, address, timeout, userDat
 
 function chatFlow(connObj, response, userData, source) {
     let intentAction = response.result.action;
-    console.error('INTENT_NAME: ' + response.result.metadata.intentName + ',  ' + 'ACTION_NAME: ' + intentAction + ', ' + 'SOURCE: ' + source + ', ' + 'userData.intent: ' + userData.intent);
+    console.error('INTENT_NAME: ' + response.result.metadata.intentName + ',  ' + 'ACTION_NAME: ' + intentAction + ', ' + 'SOURCE: ' + source + ', ' + 'userData.intent: ' + JSON.stringify(userData.intent));
     //
     let actionsReplyByGender = ['input.right', 'input.wrong'];
     let actionsMetaQuestion = ['input.metaQuestion', 'input.explain_last_question'];
