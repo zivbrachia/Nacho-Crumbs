@@ -27,16 +27,27 @@ let questionIndex = {};
 ref.child('category').child('dna').once("value", function(snapshot) {
         questions = snapshot.val();
         //
-        let objKeys = Object.keys(questions);
-        objKeys.forEach(function(subCategory) {
-            let objkeys1 = Object.keys(questions[subCategory]);
-            objkeys1.forEach(function(question) {
-                questionIndex[question] = questionIndex[question] || {};
-                questionIndex[question].category = 'dna';
-                questionIndex[question].subCategory = questionIndex[question].subCategory || [];
-                questionIndex[question].subCategory.push(subCategory);
+        let categoryL = Object.keys(questions);
+        categoryL.forEach(function(subCategory) {
+            if (subCategory==='name') return;
+            let subCategoryL = Object.keys(questions[subCategory]);
+            subCategoryL.forEach(function(sub_cat) {
+                let questionsL = Object.keys(questions[subCategory][sub_cat].questions);
+                questionsL.forEach(function (question) {
+                    questionIndex[question] = questionIndex[question] || {};
+                    questionIndex[question].category = 'dna';
+                    questionIndex[question].subCategory = questionIndex[question].subCategory || [];
+                    questionIndex[question].subCategory.push(sub_cat);
+                });
             });
         });
+}, function (errorObject) {
+    console.log("The read failed: " + errorObject.code);
+});
+//
+let information = null;
+ref.child('information').child('dna').once("value", function(snapshot) {
+    information = snapshot.val();
 }, function (errorObject) {
     console.log("The read failed: " + errorObject.code);
 });
@@ -59,6 +70,11 @@ server.get('/', function(req, res, next) {
 
 server.get('/add_question', function (req, res, next) {
     let html = fs.readFileSync(__dirname + '/public/add_question.html', 'utf8');
+    res.end(html);
+});
+
+server.get('/add_info', function (req, res, next) {
+    let html = fs.readFileSync(__dirname + '/public/add_info.html', 'utf8');
     res.end(html);
 });
 
@@ -272,6 +288,75 @@ server.post('/add_question', function create(req, res, next) {
         req.body.show_answer);
     res.redirect('/add_question', next);
 });
+
+server.post('/add_info', function create(req, res, next) {
+    createInfoSession(
+        req.body.category, 
+        req.body.sub_category, 
+        req.body.info_short,
+        req.body.title,
+        req.body.sub_title,
+        req.body.heading,
+        req.body.lead,
+        req.body.url);
+    res.redirect('/add_info', next);
+});
+
+function createInfoSession(Category, SubCategory, info_short, title, sub_title, heading, lead, url) {
+    ref.child('settings').child('info_number').once("value", function(snapshot) {
+        let InfoNumber = snapshot.val();
+        if (InfoNumber===null) {
+            InfoNumber = 101;
+        }
+        //
+        let client = require('restify').createJsonClient({
+            url: 'https://api.api.ai/v1/intents/'
+        });
+        //
+        let options = {};
+        options.headers = {};
+        options.headers.Authorization = process.env.APIAI_AUTHORIZATION;
+        options.headers['content-type'] = 'application/json; charset=utf-8';
+        //
+        let intentArray = [];
+        //
+        let infoIntent = createIntentInfo(InfoNumber, Category, SubCategory, info_short, title, sub_title, heading, lead, url);
+        //
+        intentArray.push(infoIntent);
+        //
+        client.post(options, intentArray, function(err, req, res, obj) {
+            let response = JSON.parse(res.body);
+            if (response.status.code===200) {
+                ref.child('settings').update({"info_number" : InfoNumber + 1});
+                ref.child('information').child(Category.toLowerCase()).child(SubCategory.toLowerCase()).child(response.id).update(
+                    {
+                        "name" : "Information_" + InfoNumber,
+                        "expand" : {
+                            "heading" : heading,
+                            "image" : url,
+                            "lead" : lead,
+                            "subtitle" : sub_title,
+                            "title" : title
+                        }
+                    });
+            }
+            else {
+                //res.end(res.body);
+            }
+        });
+        //
+        }, function (errorObject) {
+            res.send('error');
+            next();
+            console.log("The read failed: " + errorObject.code);
+    });
+}
+
+function createIntentInfo(InfoNumber, Category, SubCategory, info_short, title, sub_title, heading, lead, url) {
+    let info = require("./apiai_template/intents/Information_X.js").infoTemplate(InfoNumber, Category, SubCategory, info_short, title, sub_title, heading, lead, url);
+    //
+    return info;
+}
 
 function createQuestionSession(Category, SubCategory, questionText, rightAnswer, wrongAnswer1, wrongAnswer2, wrongAnswer3, hintText, explainText) {
     ref.child('settings').child('question_number').once("value", function(snapshot) {
@@ -765,22 +850,35 @@ function chatFlow(connObj, response, userData, source) {
             response.result.fulfillment.messages[0].title = response.result.fulfillment.messages[0].speech;
             response.result.fulfillment.messages[0].type = 2
             response.result.fulfillment.messages[0].replies = [];
-            let objKeys = Object.keys(questions);
+            let objKeys = Object.keys(questions['sub_category']);
             response.result.fulfillment.messages[0].replies.push('כללי');
             objKeys.forEach(function(subCategory) {
-                response.result.fulfillment.messages[0].replies.push(subCategory);
+                response.result.fulfillment.messages[0].replies.push(questions['sub_category'][subCategory].name);
             });
         } 
         
     }
     //
     if (response.result.action==='input.info_expand') {
+        //
+        if (userData.intent.action!=='output.information') {
+        }
+        else {
+            let subCategoryL = Object.keys(information);
+            subCategoryL.forEach(function(subCategory) {
+                let infoL = Object.keys(information[subCategory]);
+                infoL.forEach(function(info) {
+                    if (info===userData.intent.id) {
+                        response.result.fulfillment.messages[0].buttons[1].postback = response.result.fulfillment.messages[0].buttons[1].postback + address.channelId + '/' + address.user.id + '/' + userData.intent.id;
+                        response.result.fulfillment.messages[0].imageUrl = information[subCategory][info]['expand']['image'];
+                        response.result.fulfillment.messages[0].subtitle = information[subCategory][info]['expand']['subtitle'];
+                        response.result.fulfillment.messages[0].title = information[subCategory][info]['expand']['title'];
+                    }
+                });
+            });
+        }
+        //
         console.log(response.result.fulfillment.messages[0].buttons[1]);
-        response.result.fulfillment.messages[0].buttons[1].postback = response.result.fulfillment.messages[0].buttons[1].postback + address.channelId + '/' + address.user.id + '/' + '2a39d02f-b37a-438b-bdcd-0f24a468219b';
-        response.result.fulfillment.messages[0].imageUrl = 'https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/info%2Fdino.jpg?alt=media&token=9384a546-a3c6-4554-ac40-c26ad6a3bc26';
-        response.result.fulfillment.messages[0].subtitle = 'ה-DNA הוא אחת המולקולות היציבות ביותר בעולם.';
-        response.result.fulfillment.messages[0].title = 'DNA';
-        console.log(response.result.fulfillment.messages[0]);
     }
     //
     let messages = buildMessages(response, address, source);
@@ -1124,7 +1222,6 @@ function sendNextQuestion(response, address, userData) {
     if (actionsForSending.indexOf(response.result.action)>=0) {
         if ((userData.questionCounter % 3)  === 0) {
             lotteryInformation(address, userData, timeout);
-            //lotteryQuestion(address, userData, timeout);
         } else {
             lotteryQuestion(address, userData, timeout);
         }
@@ -1134,8 +1231,26 @@ function sendNextQuestion(response, address, userData) {
 }
 
 function lotteryInformation(address, userData, timeout) {
-    if ((questions || 'empty') === 'empty') {
+    if ((information || 'empty') === 'empty') {
         return;
+    }
+    //
+    let eventName = null;
+    //
+    if (userData.sub_category==='general') {
+        let objKeys = Object.keys(information);
+        let subCategoryLen = objKeys.length;
+        let subCategory = objKeys[Math.floor(Math.random() * subCategoryLen)];
+        let objkeys1 = Object.keys(information[subCategory]);
+        let infoLen = objkeys1.length;
+        let intent = objkeys1[Math.floor(Math.random() * infoLen)];
+        eventName = information[subCategory][intent]['name'];
+    } else {
+        let objKeys = Object.keys(information[userData.sub_category]);
+        let infoLen = objKeys.length;
+        let intent = objKeys[Math.floor(Math.random() * infoLen)];
+        eventName = information[userData.sub_category][intent]['name'];
+        
     }
     /*
     let objKeys = Object.keys(questions)
@@ -1148,7 +1263,7 @@ function lotteryInformation(address, userData, timeout) {
     console.log('eventName :' + eventName);
     //eventName = "QUESTION_7";
     */
-    let eventName = 'Information_1';
+    //let eventName = 'Information_1';
     //userData.event = 'Information_1';
     userData.questionCounter = getCounter(userData.questionCounter);
     dbEventEmitter.emit('eventRequest', eventName, address, timeout, userData || {}, false);    
@@ -1168,10 +1283,10 @@ function lotteryQuestion(address, userData, timeout) {
     } else {
         subCategory = userData.sub_category;
     }
-    let objkeys1 = Object.keys(questions[subCategory]);
+    let objkeys1 = Object.keys(questions['sub_category'][subCategory].questions);
     let questionLen = objkeys1.length;
     let intent = objkeys1[Math.floor(Math.random() * questionLen)];
-    let eventName = questions[subCategory][intent].name
+    let eventName = questions['sub_category'][subCategory].questions[intent].name
     console.log('eventName :' + eventName);
     //eventName = "QUESTION_7";
     userData.event = eventName;
@@ -1251,10 +1366,12 @@ function buildToxonomy(intent, metaData) {
     let temp = buildIntexCatalog(intent);
 
     metaData[temp.category.name] = metaData[temp.category.name] || {};
+    metaData[temp.category.name]['sub_category'] = metaData[temp.category.name]['sub_category'] || {};
     let len = temp.category.subcategory.length || 0;
     for (let i=0; i<(len); i++) {
-        metaData[temp.category.name][temp.category.subcategory[i].name] = metaData[temp.category.name][temp.category.subcategory[i].name] || {};
-        metaData[temp.category.name][temp.category.subcategory[i].name][intent.id] = {
+        metaData[temp.category.name]['sub_category'][temp.category.subcategory[i].name] = metaData[temp.category.name]['sub_category'][temp.category.subcategory[i].name] || {};
+        metaData[temp.category.name]['sub_category'][temp.category.subcategory[i].name]['questions'] = metaData[temp.category.name]['sub_category'][temp.category.subcategory[i].name]['questions'] || {};
+        metaData[temp.category.name]['sub_category'][temp.category.subcategory[i].name]['questions'][intent.id] = {
             'name': intent.name,
             'events': intent.events,
             'level' : temp.level || 1

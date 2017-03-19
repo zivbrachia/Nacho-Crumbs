@@ -9,7 +9,7 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <title>Add New Question</title>
+    <title>Add New information</title>
 
     <!-- Bootstrap Core CSS -->
     <link href="/public/css/bootstrap.min.css" rel="stylesheet">
@@ -67,7 +67,7 @@
     <header class="header-image">
         <div class="headline">
             <div dir="rtl" class="container">
-                <h1>טופס ליצירת שאלה</h1>
+                <h1>טופס ליצירת מידע</h1>
             </div>
         </div>
     </header>
@@ -91,7 +91,7 @@
             <div class="container-fluid">
             <div class="row">
             <div class="col-md-6 col-sm-6 col-xs-12">
-                <form method="post" action="/add_question">
+                <form method="post">
                 <div class="form-group ">
                 <label class="control-label requiredField" for="category">
                 בחר קטגוריה
@@ -132,87 +132,76 @@
                 </span>
                 </div>
                 <div class="form-group ">
-                <label class="control-label requiredField" for="question">
-                שאלה
+                <label class="control-label requiredField" for="info_short">
+                פיסת מידע קצרה
                 <span class="asteriskField">
                     *
                 </span>
                 </label>
-                <textarea class="form-control" cols="40" id="question" name="question" placeholder="מה זה ביולוגיה?" rows="10"></textarea>
-                <span class="help-block" id="hint_question">
-                הכנס כאן את השאלה
+                <textarea class="form-control" cols="40" id="info_short" name="info_short" placeholder="פיסת מידע קצרה" rows="10"></textarea>
+                    <span class="help-block" id="hint_info_short">
+                הכנס כאן מבוא קצר על פיסת המידע שיוצג בצ'אט
+                </span>
+                </div>
+                <hr class="featurette-divider">
+                <div class="form-group ">
+                <label class="control-label requiredField" for="title">
+                כותרת - דף אינטרנט
+                <span class="asteriskField">
+                    *
+                </span>
+                </label>
+                <input class="form-control" id="title" name="title" placeholder="כותרת" type="text"/>
+                <span class="help-block" id="hint_title">
+                כותרת
                 </span>
                 </div>
                 <div class="form-group ">
-                <label class="control-label requiredField" for="right_answer">
-                תשובה נכונה
+                <label class="control-label requiredField" for="sub_title">
+                תת כותרת - דף אינטרנט
                 <span class="asteriskField">
                     *
                 </span>
                 </label>
-                <input class="form-control" id="right_answer" name="right_answer" placeholder="תשובה נכונה" type="text"/>
-                <span class="help-block" id="hint_right_answer">
-                הכנס כאן את התשובה
+                <input class="form-control" id="sub_title" name="sub_title" placeholder="תת כותרת" type="text"/>
+                <span class="help-block" id="hint_sub_title">
+                תת כותרת
                 </span>
                 </div>
                 <div class="form-group ">
-                <label class="control-label requiredField" for="wrong_answer_1">
-                תשובה שגויה 1
+                <label class="control-label requiredField" for="heading">
+                פסקה ראשונה - דף אינטרנט
                 <span class="asteriskField">
                     *
                 </span>
                 </label>
-                <input class="form-control" id="wrong_answer_1" name="wrong_answer_1" placeholder="תשובה שגויה" type="text"/>
-                <span class="help-block" id="hint_wrong_answer_1">
-                הכנס כאן תשובה שגויה 1
+                <textarea class="form-control" cols="40" id="heading" name="heading" rows="10"></textarea>
+                <span class="help-block" id="hint_heading">
+                פסקה ראשונה
                 </span>
                 </div>
                 <div class="form-group ">
-                <label class="control-label requiredField" for="text">
-                תשובה שגויה 2
+                <label class="control-label requiredField" for="lead">
+                פסקה שניה - דף אינטרנט
                 <span class="asteriskField">
                     *
                 </span>
                 </label>
-                <input class="form-control" id="wrong_answer_2" name="wrong_answer_2" placeholder="תשובה שגויה" type="text"/>
-                <span class="help-block" id="hint_wrong_answer_2">
-                הכנס כאן תשובה שגויה 2
+                <textarea class="form-control" cols="40" id="lead" name="lead" placeholder="פסקה שניה" rows="10"></textarea>
+                <span class="help-block" id="hint_lead">
+                פסקה שניה
                 </span>
                 </div>
                 <div class="form-group ">
-                <label class="control-label requiredField" for="wrong_answer_3">
-                תשובה שגויה 3
+                <label class="control-label requiredField" for="url">
+                URL image - דף אינטרנט
                 <span class="asteriskField">
                     *
                 </span>
                 </label>
-                <input class="form-control" id="wrong_answer_3" name="wrong_answer_3" placeholder="תשובה שגויה" type="text"/>
-                <span class="help-block" id="hint_wrong_answer_3">
-                הכנס כאן תשובה שגויה 3
-                </span>
-                </div>
-                <div class="form-group ">
-                <label class="control-label requiredField" for="hint">
-                רמז
-                <span class="asteriskField">
-                    *
-                </span>
-                </label>
-                <textarea class="form-control" cols="40" id="hint" name="hint" placeholder="רמז לפתרון השאלה" rows="10"></textarea>
-                <span class="help-block" id="hint_hint">
-                הכנס כאן רמז לפתרון השאלה
-                </span>
-                </div>
-                <div class="form-group ">
-                <label class="control-label requiredField" for="show_answer">
-                הפתרון לשאלה
-                <span class="asteriskField">
-                    *
-                </span>
-                </label>
-                <textarea class="form-control" cols="40" id="show_answer" name="show_answer" placeholder="הפתרון לתשובה" rows="10"></textarea>
-                <span class="help-block" id="hint_show_answer">
-                הכנס כאן את הפתרון לתשובה
+                <input class="form-control" id="url" name="url" placeholder="http://www.example.com/image.png" type="text"/>
+                <span class="help-block" id="hint_url">
+                הכנס כאן כתובת אינטרנט לתמונה
                 </span>
                 </div>
                 <div class="form-group">
@@ -227,7 +216,6 @@
             </div>
             </div>
             </div>
-
             <!--###############################################################################################-->
         </div>
         
