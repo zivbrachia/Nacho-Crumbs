@@ -126,9 +126,8 @@ server.get('/public/:folder/:fileName', function (req, res, next) {
 });
 //
 server.get('/build', function(req, res, next) {
-    console.error("build");
     getAllIntents();
-    res.send('build intent');
+    res.send('build intent went good');
     next();
 });
 //
@@ -145,65 +144,67 @@ server.get('/user/:channelId/:userId', function(req, res, next) {
         ////////////////////////////////////////////////////
         branches.forEach(function(question) {
             let questionFlat = {};
-            Object.keys(question.timeline).forEach( function (timestamp) {
-                let singleAction = question.timeline[timestamp];
-                if (singleAction===undefined) return;
-                //
-                if (!!questionFlat['duration']) {
-                    questionFlat['duration'] = timestamp - questionFlat['timestamp'] + questionFlat['duration'];
-                    questionFlat['timestamp'] = timestamp
-                } else {
-                    questionFlat['duration'] = 1;
-                    questionFlat['timestamp'] = timestamp;
-                }
-                if (singleAction.action==='input.question') {
-                    questionFlat['name'] = singleAction.data.intentName;
-                    questionFlat['id'] = singleAction.data.intentId;
-                    questionFlat['category'] = questionIndex[singleAction.data.intentId].category;
-                    questionFlat['subCategory'] = questionIndex[singleAction.data.intentId].subCategory;
-                    questionFlat['question'] = (questionFlat['question'] || 0) + 1;
+            try {
+                Object.keys(question.timeline).forEach( function (timestamp) {
+                    let singleAction = question.timeline[timestamp];
+                    if (singleAction===undefined) return;
                     //
-                    branchesFlat.total[questionFlat['category']] = branchesFlat.total[questionFlat['category']] || {};
-                    branchesFlat.total[questionFlat['category']].questions = (branchesFlat.total[questionFlat['category']].questions || 0) + 1;
-                    branchesFlat.total[questionFlat['category']].duration = (branchesFlat.total[questionFlat['category']].duration || 0) + questionFlat['duration'];
-                    branchesFlat.total[questionFlat['category']].subCategory = branchesFlat.total[questionFlat['category']].subCategory || {};
-                    //
-                    questionFlat['subCategory'].forEach(function (sub) {
-                        branchesFlat.total[questionFlat['category']]['subCategory'][sub] = branchesFlat.total[questionFlat['category']]['subCategory'][sub] || {};
-                        branchesFlat.total[questionFlat['category']]['subCategory'][sub].questions = (branchesFlat.total[questionFlat['category']]['subCategory'][sub].questions || 0) + 1;
-                        branchesFlat.total[questionFlat['category']]['subCategory'][sub].duration = (branchesFlat.total[questionFlat['category']]['subCategory'][sub].duration || 0) + questionFlat['duration'];
-                    });
-                } else if (singleAction.action==='output.information') {
-                    questionFlat['info_name'] = singleAction.data.intentName;
-                    questionFlat['info_id'] = singleAction.data.intentId;
-                    questionFlat['info'] = (questionFlat['info'] || 0) + 1;
-                } else if (singleAction.action==='input.wrong') {
-                    questionFlat['wrong'] = (questionFlat['wrong'] || 0) + 1;
-                    branchesFlat.total[questionFlat['category']] = branchesFlat.total[questionFlat['category']] || {};
-                    branchesFlat.total[questionFlat['category']].wrong = (branchesFlat.total[questionFlat['category']].wrong || 0) + 1;
-                    questionFlat['subCategory'] = questionFlat['subCategory'] || [];
-                    questionFlat['subCategory'].forEach(function (sub) {
-                        branchesFlat.total[questionFlat['category']]['subCategory'][sub].wrong = (branchesFlat.total[questionFlat['category']]['subCategory'][sub].wrong || 0) + 1;
-                    });
-                } else if (singleAction.action==='input.right') {
-                    questionFlat['right'] = (questionFlat['right'] || 0) + 1;
-                    branchesFlat.total[questionFlat['category']] = branchesFlat.total[questionFlat['category']] || {};
-                    branchesFlat.total[questionFlat['category']].right = (branchesFlat.total[questionFlat['category']].right || 0) + 1;
-                    questionFlat['subCategory'].forEach(function (sub) {
-                        branchesFlat.total[questionFlat['category']]['subCategory'][sub].right = (branchesFlat.total[questionFlat['category']]['subCategory'][sub].right || 0) + 1;
-                    });
-                } else if (singleAction.action==='input.explain_last_question') {
-                    questionFlat['explain'] = (questionFlat['explain'] || 0) + 1;
-                    branchesFlat.total[questionFlat['category']] = branchesFlat.total[questionFlat['category']] || {};
-                    branchesFlat.total[questionFlat['category']].explain = (branchesFlat.total[questionFlat['category']].explain || 0) + 1;
-                    questionFlat['subCategory'] = questionFlat['subCategory'] || [];
-                    questionFlat['subCategory'].forEach(function (sub) {
-                        branchesFlat.total[questionFlat['category']]['subCategory'][sub].explain = (branchesFlat.total[questionFlat['category']]['subCategory'][sub].explain || 0) + 1;
-                    });
-                } else if (singleAction.action==='input.info_expand') {
-                    questionFlat['expand'] = (questionFlat['expand'] || 0) + 1;
-                }
-            }, this);
+                    if (!!questionFlat['duration']) {
+                        questionFlat['duration'] = timestamp - questionFlat['timestamp'] + questionFlat['duration'];
+                        questionFlat['timestamp'] = timestamp
+                    } else {
+                        questionFlat['duration'] = 1;
+                        questionFlat['timestamp'] = timestamp;
+                    }
+                    if (singleAction.action==='input.question') {
+                        questionFlat['name'] = singleAction.data.intentName;
+                        questionFlat['id'] = singleAction.data.intentId;
+                        questionFlat['category'] = questionIndex[singleAction.data.intentId].category;
+                        questionFlat['subCategory'] = questionIndex[singleAction.data.intentId].subCategory;
+                        questionFlat['question'] = (questionFlat['question'] || 0) + 1;
+                        //
+                        branchesFlat.total[questionFlat['category']] = branchesFlat.total[questionFlat['category']] || {};
+                        branchesFlat.total[questionFlat['category']].questions = (branchesFlat.total[questionFlat['category']].questions || 0) + 1;
+                        branchesFlat.total[questionFlat['category']].duration = (branchesFlat.total[questionFlat['category']].duration || 0) + questionFlat['duration'];
+                        branchesFlat.total[questionFlat['category']].subCategory = branchesFlat.total[questionFlat['category']].subCategory || {};
+                        //
+                        questionFlat['subCategory'].forEach(function (sub) {
+                            branchesFlat.total[questionFlat['category']]['subCategory'][sub] = branchesFlat.total[questionFlat['category']]['subCategory'][sub] || {};
+                            branchesFlat.total[questionFlat['category']]['subCategory'][sub].questions = (branchesFlat.total[questionFlat['category']]['subCategory'][sub].questions || 0) + 1;
+                            branchesFlat.total[questionFlat['category']]['subCategory'][sub].duration = (branchesFlat.total[questionFlat['category']]['subCategory'][sub].duration || 0) + questionFlat['duration'];
+                        });
+                    } else if (singleAction.action==='output.information') {
+                        questionFlat['info_name'] = singleAction.data.intentName;
+                        questionFlat['info_id'] = singleAction.data.intentId;
+                        questionFlat['info'] = (questionFlat['info'] || 0) + 1;
+                    } else if (singleAction.action==='input.wrong') {
+                        questionFlat['wrong'] = (questionFlat['wrong'] || 0) + 1;
+                        branchesFlat.total[questionFlat['category']] = branchesFlat.total[questionFlat['category']] || {};
+                        branchesFlat.total[questionFlat['category']].wrong = (branchesFlat.total[questionFlat['category']].wrong || 0) + 1;
+                        questionFlat['subCategory'] = questionFlat['subCategory'] || [];
+                        questionFlat['subCategory'].forEach(function (sub) {
+                            branchesFlat.total[questionFlat['category']]['subCategory'][sub].wrong = (branchesFlat.total[questionFlat['category']]['subCategory'][sub].wrong || 0) + 1;
+                        });
+                    } else if (singleAction.action==='input.right') {
+                        questionFlat['right'] = (questionFlat['right'] || 0) + 1;
+                        branchesFlat.total[questionFlat['category']] = branchesFlat.total[questionFlat['category']] || {};
+                        branchesFlat.total[questionFlat['category']].right = (branchesFlat.total[questionFlat['category']].right || 0) + 1;
+                        questionFlat['subCategory'].forEach(function (sub) {
+                            branchesFlat.total[questionFlat['category']]['subCategory'][sub].right = (branchesFlat.total[questionFlat['category']]['subCategory'][sub].right || 0) + 1;
+                        });
+                    } else if (singleAction.action==='input.explain_last_question') {
+                        questionFlat['explain'] = (questionFlat['explain'] || 0) + 1;
+                        branchesFlat.total[questionFlat['category']] = branchesFlat.total[questionFlat['category']] || {};
+                        branchesFlat.total[questionFlat['category']].explain = (branchesFlat.total[questionFlat['category']].explain || 0) + 1;
+                        questionFlat['subCategory'] = questionFlat['subCategory'] || [];
+                        questionFlat['subCategory'].forEach(function (sub) {
+                            branchesFlat.total[questionFlat['category']]['subCategory'][sub].explain = (branchesFlat.total[questionFlat['category']]['subCategory'][sub].explain || 0) + 1;
+                        });
+                    } else if (singleAction.action==='input.info_expand') {
+                        questionFlat['expand'] = (questionFlat['expand'] || 0) + 1;
+                    }
+                }, this);
+            } catch (err) {}
             branchesFlat.questions.push(questionFlat);
         });
         //res.send(branchesFlat);
@@ -380,17 +381,35 @@ function createQuestionSession(Category, SubCategory, questionText, rightAnswer,
         let rightAnswerIntent = createIntentRightAnswer(QuestionNumber, rightAnswer);
         let wrongAnswerIntent = createIntentWrongAnswer(QuestionNumber, wrongAnswer1, wrongAnswer2, wrongAnswer3);
         let hintIntent = createIntentHint(QuestionNumber, hintText);
-        let explainIntent = createIntentExplain(QuestionNumber, explainText);
+        let explainIntent = createIntentExplain(QuestionNumber, explainText, rightAnswer);
         let hintAskIntent = createIntentHintAsk(QuestionNumber, hintText);
         let skipIntent = createIntentSkip(QuestionNumber);
         //
-        intentArray.push(questionIntent);
+        //intentArray.push(questionIntent);
         intentArray.push(rightAnswerIntent);
         intentArray.push(wrongAnswerIntent);
         intentArray.push(hintIntent);
         intentArray.push(explainIntent);
         intentArray.push(hintAskIntent);
         intentArray.push(skipIntent);
+        //
+        client.post(options, questionIntent, function(err, req, res, obj) {
+            let result = JSON.parse(res.body);
+            if (result.status.code===200) {
+                ref.child('category').child(Category.toLowerCase()).child('sub_category').child(SubCategory.toLowerCase()).child('questions').child(result.id).update({
+                    "events" : [
+                        {
+                            "name" : "Question_Ask_" + QuestionNumber
+                        }
+                    ],
+                    "level" : 1,
+                    "name" : "Question_Ask_" + QuestionNumber
+                });
+            }
+            else {
+                //res.end(res.body);
+            }
+        });
         //
         client.post(options, intentArray, function(err, req, res, obj) {
             //console.log(JSON.parse(res.body));
@@ -421,8 +440,8 @@ function createIntentHintAsk(QuestionNumber, hintText) {
     return hintAsk;
 }
 
-function createIntentExplain(QuestionNumber, explainText) {
-    let explain = require("./apiai_template/intents/Question_Explain_X.js").explainTemplate(QuestionNumber, explainText);
+function createIntentExplain(QuestionNumber, explainText, rightAnswer) {
+    let explain = require("./apiai_template/intents/Question_Explain_X.js").explainTemplate(QuestionNumber, explainText, rightAnswer);
     //
     return explain;
 }
@@ -600,6 +619,9 @@ intents.matches(/^reset userData/i, function (session){
 
 intents.matches(/^show userData/i, function (session){
      session.send(JSON.stringify(session.userData));
+     session.sendBatch(function (err) {
+        console.log(err);
+     });
 });
 
 intents.matches(/^db/i, function (session){
@@ -699,6 +721,7 @@ userProfileEventEmitter.on('facebook_user_profile', function(session, request) {
 });
 //
 dbEventEmitter.on('eventRequest', function (eventName, address, timeout, userData, session) {
+    //eventName = "Question_Ask_109";
     console.error('setTimeout ' + eventName + ' : '+ timeout || process.env.TIMEOUT_QUESTION_MS);
     setTimeout(function () {
         let event = {
@@ -729,9 +752,13 @@ dbEventEmitter.on('eventRequest', function (eventName, address, timeout, userDat
                     textRequest.end();
                     return;
                 }
-                let address = JSON.parse(response.result.parameters.address);
-                let userData = JSON.parse(response.result.parameters.userData);
-                apiaiEventEmitter.emit('apiai_response', address, response, userData || {}, "eventRequest");
+                try {
+                    let address = JSON.parse(response.result.parameters.address);
+                    let userData = JSON.parse(response.result.parameters.userData);
+                    apiaiEventEmitter.emit('apiai_response', address, response, userData || {}, "eventRequest");
+                } catch (err) {
+                    console.log("error 100: " + err);
+                }
             });
         });
 
@@ -745,7 +772,7 @@ dbEventEmitter.on('eventRequest', function (eventName, address, timeout, userDat
 
 function chatFlow(connObj, response, userData, source) {
     let intentAction = response.result.action;
-    console.error('INTENT_NAME: ' + response.result.metadata.intentName + ',  ' + 'ACTION_NAME: ' + intentAction + ', ' + 'SOURCE: ' + source + ', ' + 'userData.intent: ' + JSON.stringify(userData.intent));
+    console.error('INTENT_NAME: ' + response.result.metadata.intentName + ',  ' + 'ACTION_NAME: ' + intentAction + ', ' + 'SOURCE: ' + source + ', ' + 'QUESTION_COUNTER: ' + userData.questionCounter);
     //
     let actionsReplyByGender = ['input.right', 'input.wrong'];
     let actionsMetaQuestion = ['input.metaQuestion', 'input.explain_last_question'];
@@ -777,6 +804,10 @@ function chatFlow(connObj, response, userData, source) {
     }
     //
     //
+    if (intentAction==='output.wrong_reply') {
+        dbEventEmitter.emit('eventRequest', userData.question.intentName.replace('Ask', 'Explain'), address, 4000, userData || {}, false);
+        //return;
+    }
     if ((!userData.intent)&(intentAction!=='input.welcome')) { // first time ever - sends default welcome intent - whatever the user says
         dbEventEmitter.emit('eventRequest', 'WELCOME', address, 0, userData || {}, false);
         return;
@@ -882,6 +913,13 @@ function chatFlow(connObj, response, userData, source) {
     }
     //
     let messages = buildMessages(response, address, source);
+    //
+    if (intentAction==='input.question') {
+        let msg = msgWithQuestionStat(address, userData);
+        messages.unshift(msg.toMessage());
+        //messages.push(msg);
+    }
+    //
     sendMessages(response, connObj, messages, userData || {});
 
     if (actionsSendingNextQuestion.indexOf(intentAction)>=0) {
@@ -892,6 +930,31 @@ function chatFlow(connObj, response, userData, source) {
     if (intentAction==='profile.first_name') {  // TODO for MVP
         dbEventEmitter.emit('eventRequest', 'Gender', address, 4000, userData || {}, false);
     }
+}
+
+function msgWithQuestionStat(address, userData) { 
+    let msg = null;
+    let text = "שאלה " + ((userData.questionCounter % 5) + 1) + " מתוך 5";
+    //
+    if (address.channelId==='telegram') {
+        msg = new builder.Message().address(address).sourceEvent({
+            telegram:{
+                method: 'sendMessage',
+                parameters: {
+                    text: text,
+                    parse_mode: 'Markdown',
+                    reply_markup: {
+                        hide_keyboard: true
+                    }
+                }
+            }
+        });
+    }
+    else if (address.channelId==='facebook') {
+        msg = new builder.Message().address(address).text(text);
+    }
+    msg.userData = userData;
+    return msg;
 }
 
 function replyByGender(intentAction, userData, address) {  // question reply (right/wrong)
@@ -949,10 +1012,13 @@ function buildMsg(messageType, channelId, message) {
 function buildMessages(response, address, source) {
     let startWith = '';
     if (response.result.action==="input.question") {
-        startWith = 'שאלה: ';
+        //startWith = 'שאלה: ';
+        startWith = '';
     } else if (response.result.action==="input.hint_ask") {
         startWith = 'רמז: ';
-    }
+    } //else if (response.result.action==="input.explain") {
+      //  startWith = 'הסבר: '; 
+    //}
     let len = response.result.fulfillment.messages.length;
     let textResponseToQuickReplies = '';
     let messages = [];
@@ -960,19 +1026,21 @@ function buildMessages(response, address, source) {
     if (response.result.action==='input.info_expand') {
         let msg = {};
         msg = new builder.Message().address(address).sourceEvent(cardJson(address, response));
-        messages.push(msg);
+        messages.push(msg.toMessage());
         return messages;
     }
     //
     for (let i=0; i<(len); i++) {
         let message = response.result.fulfillment.messages[i];
         let msg = {};
-        //console.log("message type: " + message.type + " " + source);
         switch(message.type) {
             case 0: // Text response
                 if (response.result.action==='input.break') {
                     message.speech = message.speech.replace('CET', 'https://nacho-crumbs.herokuapp.com/user/' + address.channelId + '/' + address.user.id)
                 }
+                //if (response.result.action==='input.explain') {
+                //    message.speech = message.speech.replace('[x]', 'הסבר:')
+                //}
                 if (message.speech.indexOf('[>>]') !== (-1)) {
                         textResponseToQuickReplies = message.speech.split('[>>]')[0];
                         break;
@@ -990,13 +1058,13 @@ function buildMessages(response, address, source) {
                             }
                         }
                     });
-                    messages.push(msg);
+                    messages.push(msg.toMessage());
                 }
                 else if (address.channelId==='facebook') {
                     let text = message.speech.replace(/\n/g, '\n\r');
-                    //msg = new builder.Message().address(address).text((response.result.action=="input.question")? ("שאלה:" + " " + text):(text));
+
                     msg = new builder.Message().address(address).text(startWith + text);
-                    messages.push(msg);
+                    messages.push(msg.toMessage());
                 }
                 break;
             case 1: // Card
@@ -1019,7 +1087,7 @@ function buildMessages(response, address, source) {
                         facebookObj.facebook.quick_replies.push(quick_reply);
                     }
                     msg = new builder.Message().address(address).sourceEvent(facebookObj);
-                    messages.push(msg);
+                    messages.push(msg.toMessage());
 
                 } else if (address.channelId==='telegram') {
                     let len = message.replies.length;
@@ -1054,7 +1122,7 @@ function buildMessages(response, address, source) {
                     });
                     
                     /////////////////////
-                    messages.push(msg);
+                    messages.push(msg.toMessage());
                 }
                 //
                 //messages.push(msg);
@@ -1065,7 +1133,7 @@ function buildMessages(response, address, source) {
                         contentType: "image/gif",
                         contentUrl: message.imageUrl
                 }]);
-                messages.push(msg);
+                messages.push(msg.toMessage());
                 break;
             case 4: // Custom Payload
                 let payload = message.payload;
@@ -1085,12 +1153,31 @@ apiaiEventEmitter.on('apiai_response', function (connObj, response, userData, so
         return;
 });
 /////////////////////////////////////////////////////////////////////////////////////////////////////
+function sendMessages1(response, session, messages, userData) {
+    let len = messages.length;
+    let updateUserData = {};
+    if (session.constructor.name==='Session') {
+        for (let i=0; i<(len); i++) {
+            let message = messages[i];
+            updateUserData = sendMessageBySession(message, response, session);
+        }
+    }
+    else {
+        updateUserData = sendMessagesProactive(messages, response, userData);
+    }
+    if (updateUserData) {
+        writeCurrentUserData(session, updateUserData);
+    }
+}
+
 function sendMessages(response, session, messages, userData) {
+    sendMessages1(response, session, messages, userData); return;
+    /*
     let len = messages.length;
     let updateUserData = {};
     for (let i=0; i<(len); i++) {
         let message = messages[i];
-        if (session.constructor.name=='Session') {
+        if (session.constructor.name==='Session') {
             updateUserData = sendMessageBySession(message, response, session);
         } else {
             message.userData = userData;
@@ -1100,6 +1187,7 @@ function sendMessages(response, session, messages, userData) {
     if (updateUserData) {
         writeCurrentUserData(session, updateUserData);
     }
+    */
     //
     //saveLastQuestionFlow(session, userData.question)
     //
@@ -1114,6 +1202,28 @@ function saveLastQuestionFlow(session, question) {
     } else {
         let refUser = ref.child('users').child(session.channelId).child(session.user.id).child('questions').child(today.getTime).child(now.getTime).push(response.result.metadata);
     }
+}
+
+function sendMessagesProactive(messages, response, userData) {
+    userData.intent = userData.intent || {};
+    //
+    userData.intent.action = response.result.action;
+    userData.intent.id = response.result.metadata.intentId;
+    userData.intent.name = response.result.metadata.intentName;
+    //
+    if ((response.result.action=='input.question')&(response.result.metadata.intentName.indexOf(process.env.APIAI_QUESTION_TEMPLATE) !== (-1))) {
+        let eventName = response.result.metadata.intentName;
+        userData.event = eventName;
+    }
+    //
+    let len = messages.length;
+    for (let i=0; i<(len); i++) {
+            messages[i].userData = userData;
+    }
+
+    bot.send(messages);
+
+    return userData;
 }
 
 function sendMessageProactive(message, response) {
@@ -1139,7 +1249,7 @@ function updateUserDataIntent(message, response) {
         let eventName = response.result.metadata.intentName;
         message.userData.event = eventName;
         //
-        message.userData.questionCounter = getCounter(message.userData.questionCounter);
+        //message.userData.questionCounter = getCounter(message.userData.questionCounter);
     }
 }
 
@@ -1158,6 +1268,9 @@ function sendMessageBySession(message, response, session) {
     //
     message.userData = session.userData;
     session.send(message);
+    session.sendBatch(function (err) {
+        console.log(err);
+     });
     //
     return session.userData;
 }
@@ -1221,7 +1334,7 @@ function sendNextQuestion(response, address, userData) {
     }
     //
     if (actionsForSending.indexOf(response.result.action)>=0) {
-        if ((userData.questionCounter % 3)  === 0) {
+        if ((userData.questionCounter % 5)  === 0) {
             lotteryInformation(address, userData, timeout);
             //lotteryQuestion(address, userData, timeout);
         } else {
@@ -1255,7 +1368,6 @@ function lotteryInformation(address, userData, timeout) {
         eventName = information[userData.sub_category][intent]['name'];
         
     }
-    //let eventName = 'Information_1';
     userData.intent.action = 'output.information';
     userData.intent.id = intent;
     userData.intent.name = eventName;
@@ -1331,6 +1443,29 @@ function readCurrentIntent(session) {
     });
 }
 
+function updateNames() {
+    ref.child('dictionary').child('category').once("value", function(snapshot) {
+        let dictionary = snapshot.val();
+        //
+        dictionary.forEach(function(category, i) {
+            ref.child('category').child(category.name.toLowerCase()).update(
+                    {
+                        "name" : category.heb
+                    }
+                );
+            category.sub_category.forEach(function(subCategory, j) {
+                ref.child('category').child(category.name.toLowerCase()).child('sub_category').child(subCategory.name.toLowerCase()).update(
+                    {
+                        "name" : subCategory.heb
+                    }
+                );
+            });
+        });
+    }, function (errorObject) {
+        console.log("The read failed: " + errorObject.code);
+    });     
+}
+
 function getAllIntents(){
     let client = require('restify').createJsonClient({
         url: 'https://api.api.ai/v1/intents'
@@ -1341,23 +1476,30 @@ function getAllIntents(){
 
     client.get(options,function(err, req, res) {
         syncFromApiaiToDb(JSON.parse(res.body));
+        updateNames()
     });
 }
 
 function syncFromApiaiToDb(intents) {
     let metaData = {};
-    let len = intents.length;
-    for (let i=0; i<(len); i++) {
-        let intent = intents[i];
-        buildToxonomy(intent, metaData);
-    }
-    console.log(metaData);
+    try {
+        let len = intents.length;
+        for (let i=0; i<(len); i++) {
+            let intent = intents[i];
+            buildToxonomy(intent, metaData);
+        }
+    } catch (err) {}
     let refCategory = ref.child('category').update(metaData);
 }
 
 function buildToxonomy(intent, metaData) {
+    if(intent.name.indexOf('Information') > -1) {
+        return;
+    }
     let temp = buildIntexCatalog(intent);
-
+    if (temp.category.name===undefined) {
+        return;
+    }
     metaData[temp.category.name] = metaData[temp.category.name] || {};
     metaData[temp.category.name]['sub_category'] = metaData[temp.category.name]['sub_category'] || {};
     let len = temp.category.subcategory.length || 0;
@@ -1504,3 +1646,4 @@ function sumAmountDuration(duration) {
     //
     return amount;
 }
+

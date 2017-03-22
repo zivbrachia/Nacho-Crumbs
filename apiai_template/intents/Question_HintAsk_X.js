@@ -45,8 +45,7 @@ function hintAskTemplate(QuestionNumber, hintText) {
                     {
                         "title" : "[\u003e\u003e]",
                         "replies" : [
-                            "לחזור לשאלה",
-                            "דלג"
+                            "לחזור לשאלה"
                         ],
                         "type" : 2
 

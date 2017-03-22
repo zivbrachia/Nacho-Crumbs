@@ -1,6 +1,6 @@
 module.exports = {explainTemplate};
 
-function explainTemplate(QuestionNumber, explainText) {
+function explainTemplate(QuestionNumber, explainText, rightAnswer) {
     let explainTemplate = {
         "templates" : [],
         "userSays" : [],
@@ -35,8 +35,7 @@ function explainTemplate(QuestionNumber, explainText) {
                     {
                         "title" : "[\u003e\u003e]",
                         "replies" : [
-                            "המשך",
-                            "תן הפסקה"
+                            "המשך"
                         ],
                         "type" : 2
 
