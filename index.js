@@ -15,6 +15,8 @@ let BotanalyticsMiddleware = require('botanalytics-microsoftbotframework-middlew
 let fs = require('fs');
 let bodyParser = require('body-parser'); // for webhook
 
+const STUDY_SESSION = 5;  // number of question for each study session;
+
 firebase.initializeApp({
     credential: firebase.credential.cert(db_credential.serviceAccount),
     databaseURL: process.env.DB_URL
@@ -882,7 +884,7 @@ function chatFlow(connObj, response, userData, source) {
             response.result.fulfillment.messages[0].type = 2
             response.result.fulfillment.messages[0].replies = [];
             let objKeys = Object.keys(questions['sub_category']);
-            response.result.fulfillment.messages[0].replies.push('כללי');
+            response.result.fulfillment.messages[0].replies.push('הכל');
             objKeys.forEach(function(subCategory) {
                 response.result.fulfillment.messages[0].replies.push(questions['sub_category'][subCategory].name);
             });
@@ -934,7 +936,10 @@ function chatFlow(connObj, response, userData, source) {
 
 function msgWithQuestionStat(address, userData) { 
     let msg = null;
-    let text = "שאלה " + ((userData.questionCounter % 5) + 1) + " מתוך 5";
+    let length = Object.keys(userData.study_session.questions).length;
+    let nume = userData.study_session.stat.total_questions - length + 1;
+    let deno = userData.study_session.stat.total_questions;
+    let text = "שאלה " + nume + " מתוך " + deno;
     //
     if (address.channelId==='telegram') {
         msg = new builder.Message().address(address).sourceEvent({
@@ -982,33 +987,6 @@ function replyByGender(intentAction, userData, address) {  // question reply (ri
     }
 }
 
-function buildMsg(messageType, channelId, message) {
-    if (messageType==='TextResponse') {
-        if (channelId==='telegram') {
-
-        } else if (channelId==='facebook') {
-
-        }
-    } else if (messageType==='Card') {
-        if (channelId==='telegram') {
-
-        } else if (channelId==='facebook') {
-
-        }
-    } else if (messageType==='QuickReplies') {
-        if (channelId==='telegram') {
-
-        } else if (channelId==='facebook') {
-
-        }
-    } else if (messageType==='CustomPayload') {
-        if (channelId==='telegram') {
-
-        } else if (channelId==='facebook') {
-
-        }
-    }
-}
 function buildMessages(response, address, source) {
     let startWith = '';
     if (response.result.action==="input.question") {
@@ -1016,19 +994,23 @@ function buildMessages(response, address, source) {
         startWith = '';
     } else if (response.result.action==="input.hint_ask") {
         startWith = 'רמז: ';
-    } //else if (response.result.action==="input.explain") {
-      //  startWith = 'הסבר: '; 
-    //}
+    } else if (response.result.action==="input.hint") {
+        startWith = 'רמז: ';
+    } else if (response.result.action==="input.explain") {
+        startWith = 'הסבר: '; 
+    } else if (response.result.action==="output.information") {
+        startWith = 'הידעת! ';
+    }
     let len = response.result.fulfillment.messages.length;
     let textResponseToQuickReplies = '';
     let messages = [];
     //
-    if (response.result.action==='input.info_expand') {
+    /*if (response.result.action==='input.info_expand') {
         let msg = {};
         msg = new builder.Message().address(address).sourceEvent(cardJson(address, response));
         messages.push(msg.toMessage());
         return messages;
-    }
+    }*/
     //
     for (let i=0; i<(len); i++) {
         let message = response.result.fulfillment.messages[i];
@@ -1068,6 +1050,9 @@ function buildMessages(response, address, source) {
                 }
                 break;
             case 1: // Card
+                let msg = {};
+                msg = new builder.Message().address(address).sourceEvent(cardJson(address, response));
+                messages.push(msg.toMessage());
                 break;
             case 2: // Quick replies
                 if (address.channelId==='facebook') {
@@ -1333,12 +1318,21 @@ function sendNextQuestion(response, address, userData) {
             timeout = 4000;
     }
     //
+    userData.study_session = userData.study_session || {};
+    userData.study_session.questions = userData.study_session.questions || {};
+    userData.study_session.stat = userData.study_session.stat || {};
+    //
+    delete userData.study_session.questions[userData.question.intentId];
+    //
     if (actionsForSending.indexOf(response.result.action)>=0) {
-        if ((userData.questionCounter % 5)  === 0) {
+        if (((Object.keys(userData.study_session.questions).length) === 0) && (!!userData.study_session.stat.total_questions)) {
+        //if ((userData.questionCounter % STUDY_SESSION)  === 0) {
             lotteryInformation(address, userData, timeout);
             //lotteryQuestion(address, userData, timeout);
         } else {
-            lotteryQuestion(address, userData, timeout);
+            //buildStudySession(userData, questions);
+            sendQuestionFromStudySession(address, userData, timeout);
+            //lotteryQuestion(address, userData, timeout);
         }
     } //else if (aaa.indexOf(response.result.action)>=0) {
       //  dbEventEmitter.emit('eventRequest', 'Category_Dna', address, 4000, userData || {}, false);    
@@ -1372,15 +1366,99 @@ function lotteryInformation(address, userData, timeout) {
     userData.intent.id = intent;
     userData.intent.name = eventName;
     userData.questionCounter = getCounter(userData.questionCounter);
+    //
+    delete userData.study_session.stat.total_questions;
+    //
     dbEventEmitter.emit('eventRequest', eventName, address, timeout, userData || {}, false);    
     
+}
+
+function buildStudySession(userData, questions) {
+    if ((questions || 'empty') === 'empty') {
+        return;
+    }
+    //
+    userData.sub_category = userData.sub_category || 'general';
+    //
+    let tempQuestions = questions;
+    let study_session = {};
+    study_session.questions = {};
+    study_session.stat = {};
+    //
+    for (let i=0; i<STUDY_SESSION; i++) {
+        let subCategory = getSubCategory(userData.sub_category, tempQuestions);
+        let question = getQuestion(subCategory, tempQuestions)
+        //
+        if (question.id===undefined) {
+            return;
+        } else {
+            study_session.questions[question.id] = question.question;
+        }
+    }
+    //
+    study_session.stat.total_questions = Object.keys(study_session.questions).length;
+    //
+    return study_session;
+}
+
+function getQuestion(subCategory, questions) {
+    let objkeys1 = Object.keys(questions['sub_category'][subCategory].questions);
+    let questionLen = objkeys1.length;
+    let intent = objkeys1[Math.floor(Math.random() * questionLen)];
+    //
+    let intentJson = {
+        "id" : intent,
+        "question" : questions['sub_category'][subCategory].questions[intent]
+    };
+    //
+    delete questions['sub_category'][subCategory].questions[intent];
+    //
+    return intentJson;
+}
+
+function getSubCategory(sub_category, questions) {
+    sub_category = sub_category || 'general';
+    //
+    if (sub_category==='general') {
+        let objKeys = Object.keys(questions['sub_category']);
+        let subCategoryLen = objKeys.length;
+        sub_category = objKeys[Math.floor(Math.random() * subCategoryLen)];
+    }
+    //
+    return sub_category;
+}   
+
+function sendQuestionFromStudySession(address, userData, timeout) {
+    let questionIndex = Object.keys(userData.study_session.questions)[0];
+    if (questionIndex===undefined) {
+        userData.study_session = buildStudySession(userData, questions);
+        questionIndex = Object.keys(userData.study_session.questions)[0];
+    }
+    let questionJson = {
+        question : userData.study_session.questions[questionIndex]
+    }
+    //delete userData.study_session.questions[questionIndex];
+    //
+    userData.event = questionJson.question.name;
+    if (!!userData.question===false) { 
+        userData.question = {};
+        userData.question.intentId = questionIndex;
+        userData.question.intentName = questionJson.question.name;
+    }
+    else if (userData.question.intentId!==questionIndex) {
+        userData.question = {};
+        userData.question.intentId = questionIndex;
+        userData.question.intentName = questionJson.question.name;
+    }
+    //
+    dbEventEmitter.emit('eventRequest', questionJson.question.name, address, timeout, userData || {}, false); 
 }
 
 function lotteryQuestion(address, userData, timeout) {
     if ((questions || 'empty') === 'empty') {
         return;
     }
-    let objKeys = Object.keys(questions['sub_category'])
+    let objKeys = Object.keys(questions['sub_category']);
     let subCategory = null;
     userData.sub_category = userData.sub_category || 'general';
     if (userData.sub_category==='general') {
@@ -1587,8 +1665,8 @@ function buildElement(message) {
     }
     //
     let element = {
-        image_url: "https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fnacho1024.png?alt=media&token=40ea8306-8bf6-4810-b2b0-f45678438746",
-        item_url: "https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fnacho1024.png?alt=media&token=40ea8306-8bf6-4810-b2b0-f45678438746",
+        image_url: message.imageUrl,
+        item_url: message.imageUrl,
         subtitle: message.subtitle,
         title: message.title,
         buttons: []
