@@ -921,8 +921,10 @@ function chatFlow(connObj, response, userData, source) {
         messages.unshift(msg.toMessage());
         //messages.push(msg);
     } else if (intentAction==='input.explain') {
-        let msg = msgWithStudySessionStat()
-        messages.push(msg.toMessage());
+        if (((Object.keys(userData.study_session.questions).length) === 0) && (!!userData.study_session.stat.total_questions)) {
+            let msg = msgWithStudySessionStat(address, userData);
+            messages.push(msg.toMessage());
+        }
     }
     //
     sendMessages(response, connObj, messages, userData || {});
@@ -937,7 +939,7 @@ function chatFlow(connObj, response, userData, source) {
     }
 }
 
-function msgWithStudySessionStat() {
+function msgWithStudySessionStat(address, userData) {
     let msg = null;
     let text = "ענית נכון על 5 מתוך 5 שאלות";
     //
