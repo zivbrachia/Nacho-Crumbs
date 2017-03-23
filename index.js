@@ -1012,6 +1012,7 @@ function buildMessages(response, address, source) {
         return messages;
     }*/
     //
+    let cardFlag = false;
     for (let i=0; i<(len); i++) {
         let message = response.result.fulfillment.messages[i];
         let msg = {};
@@ -1048,11 +1049,15 @@ function buildMessages(response, address, source) {
                     msg = new builder.Message().address(address).text(startWith + text);
                     messages.push(msg.toMessage());
                 }
+                cardFlag=false;
                 break;
             case 1: // Card
-                let msg = {};
-                msg = new builder.Message().address(address).sourceEvent(cardJson(address, response));
-                messages.push(msg.toMessage());
+                if (cardFlag===false) {
+                    let msg = {};
+                    msg = new builder.Message().address(address).sourceEvent(cardJson(address, response, i));
+                    messages.push(msg.toMessage());
+                    cardFlag = true;
+                }
                 break;
             case 2: // Quick replies
                 if (address.channelId==='facebook') {
@@ -1111,6 +1116,7 @@ function buildMessages(response, address, source) {
                 }
                 //
                 //messages.push(msg);
+                cardFlag=false;
                 break;
             case 3: // Image
                 msg = new builder.Message().address(address)
@@ -1119,11 +1125,13 @@ function buildMessages(response, address, source) {
                         contentUrl: message.imageUrl
                 }]);
                 messages.push(msg.toMessage());
+                cardFlag=false;
                 break;
             case 4: // Custom Payload
                 let payload = message.payload;
                 msg = new builder.Message().address(address).sourceEvent(payload);
                 messages.push(msg);
+                cardFlag=false;
                 break;
         }
     }
@@ -1614,11 +1622,11 @@ function buildIntexCatalog(intent) {
     return temp;
 }
 
-function cardJson(address, response) {
+function cardJson(address, response, messageIndex) {
     let payload = {};
     //
     //if (address.channelId === 'facebook') {
-        payload.facebook = cardJsonFacebook(response);
+        payload.facebook = cardJsonFacebook(response, messageIndex);
     //} else if (address.channelId === 'telegram') {
         payload.telegram = cardJsonTelegram(response);
     //}
@@ -1680,7 +1688,7 @@ function buildElement(message) {
     return element;
 }
 
-function cardJsonFacebook(response) {
+function cardJsonFacebook(response, messageIndex) {
     let facebook = {
         attachment: {
             type: "template",
@@ -1691,9 +1699,16 @@ function cardJsonFacebook(response) {
         }
     };
     //
-    let len = response.result.fulfillment.messages.length;
-    for (let i=0; i<(len); i++) {
-        facebook.attachment.payload.elements.push(buildElement(response.result.fulfillment.messages[i]));
+    let message = response.result.fulfillment.messages[messageIndex];
+    while (message.type===1) {
+        facebook.attachment.payload.elements.push(buildElement(response.result.fulfillment.messages[messageIndex]));
+        messageIndex = messageIndex + 1;
+        if (messageIndex>=response.result.fulfillment.messages.length) {
+            message.type=false;
+        }
+        else {
+            message = response.result.fulfillment.messages[messageIndex];
+        }
     }
     
     return facebook;
