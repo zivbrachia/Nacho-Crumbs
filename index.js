@@ -920,6 +920,9 @@ function chatFlow(connObj, response, userData, source) {
         let msg = msgWithQuestionStat(address, userData);
         messages.unshift(msg.toMessage());
         //messages.push(msg);
+    } else if (intentAction==='input.explain') {
+        let msg = msgWithStudySessionStat()
+        messages.push(msg.toMessage());
     }
     //
     sendMessages(response, connObj, messages, userData || {});
@@ -932,6 +935,31 @@ function chatFlow(connObj, response, userData, source) {
     if (intentAction==='profile.first_name') {  // TODO for MVP
         dbEventEmitter.emit('eventRequest', 'Gender', address, 4000, userData || {}, false);
     }
+}
+
+function msgWithStudySessionStat() {
+    let msg = null;
+    let text = "ענית נכון על 5 מתוך 5 שאלות";
+    //
+    if (address.channelId==='telegram') {
+        msg = new builder.Message().address(address).sourceEvent({
+            telegram:{
+                method: 'sendMessage',
+                parameters: {
+                    text: text,
+                    parse_mode: 'Markdown',
+                    reply_markup: {
+                        hide_keyboard: true
+                    }
+                }
+            }
+        });
+    }
+    else if (address.channelId==='facebook') {
+        msg = new builder.Message().address(address).text(text);
+    }
+    msg.userData = userData;
+    return msg;
 }
 
 function msgWithQuestionStat(address, userData) { 
@@ -1330,6 +1358,7 @@ function sendNextQuestion(response, address, userData) {
     userData.study_session.questions = userData.study_session.questions || {};
     userData.study_session.stat = userData.study_session.stat || {};
     //
+    userData.question = userData.question || {};
     delete userData.study_session.questions[userData.question.intentId];
     //
     if (actionsForSending.indexOf(response.result.action)>=0) {
