@@ -14,6 +14,7 @@ let BotanalyticsMiddleware = require('botanalytics-microsoftbotframework-middlew
 });
 let fs = require('fs');
 let bodyParser = require('body-parser'); // for webhook
+let htmlConvert = require('html-convert');
 
 const STUDY_SESSION = 5;  // number of question for each study session;
 
@@ -78,6 +79,26 @@ server.get('/add_question', function (req, res, next) {
 server.get('/add_info', function (req, res, next) {
     let html = fs.readFileSync(__dirname + '/public/add_info.html', 'utf8');
     res.end(html);
+});
+
+server.get('/study_session/:channelId/:userId/:score', function (req, res, next) {
+    if (req.params.channelId==='facebook') {
+        webRequest('https://graph.facebook.com/v2.6/'+ req.params.userId +'?access_token=' + 'EAADW6j7AJtABAH0CyJcqY81m8eKjKlduO6XNQBQa6JWZCcEpg6cFtEHZAIZArP98sVph3zMnzklhVPmQ63LN6FMnsO4UPg6TiAvcEXnXrqfbyB3iXwrIFw9QnxvtjSLtgXpGfiDLCIou0NeKoaWOioili6zk4BZCpOpBA5HwcQZDZD', function (error, response, body) {
+            if (!error && response.statusCode == 200) {
+                let user_profile = JSON.parse(body);
+                console.log('user_profile: ' + user_profile);
+                //
+                let refUser = ref.child('users').child(req.params.channelId).child(req.params.userId).child('userData').child('user_profile');
+                refUser.update({ profile_pic : user_profile.profile_pic});
+                //
+                let html = fs.readFileSync(__dirname + '/public/study_session.html', 'utf8');
+                //
+                html = html.replace('{background}', user_profile.profile_pic);
+                html = html.replace('{score}', req.params.score);
+                res.end(html);
+            }
+        });
+    }
 });
 
 server.get('/info/:channelId/:userId/:infoId', function (req, res, next) {
@@ -659,7 +680,7 @@ bot.dialog('/', intents);
 const apiaiEventEmitter = new EventEmitter();
 const dbEventEmitter = new EventEmitter();
 const userProfileEventEmitter = new EventEmitter();
-
+const studySessionEventEmitter = new EventEmitter();
 /////////////////////////////////////////////////////////////////////////
 userProfileEventEmitter.on('facebook_user_profile', function(session, request) {
     setImmediate(function() {
@@ -722,6 +743,31 @@ userProfileEventEmitter.on('facebook_user_profile', function(session, request) {
     request.end();
 });
 //
+studySessionEventEmitter.on('newStudySession', function (address, userData, timeout) {
+    setImmediate(function () {
+        userData.study_session = buildStudySession(userData, questions);
+        let questionIndex = Object.keys(userData.study_session.questions)[0];
+        //
+        let questionJson = {
+            question : userData.study_session.questions[questionIndex]
+        }
+        //
+        userData.event = questionJson.question.name;
+        if (!!userData.question===false) { 
+            userData.question = {};
+            userData.question.intentId = questionIndex;
+            userData.question.intentName = questionJson.question.name;
+        }
+        else if (userData.question.intentId!==questionIndex) {
+            userData.question = {};
+            userData.question.intentId = questionIndex;
+            userData.question.intentName = questionJson.question.name;
+        }
+        //
+        dbEventEmitter.emit('eventRequest', questionJson.question.name, address, timeout, userData || {}, false); 
+    });
+});
+
 dbEventEmitter.on('eventRequest', function (eventName, address, timeout, userData, session) {
     //eventName = "Question_Ask_109";
     console.error('setTimeout ' + eventName + ' : '+ timeout || process.env.TIMEOUT_QUESTION_MS);
@@ -880,18 +926,30 @@ function chatFlow(connObj, response, userData, source) {
             userData.category = 'dna';
             userData.sub_category = response.result.parameters.subcategory;
         } else {
-            response.result.fulfillment.messages[0].title = response.result.fulfillment.messages[0].speech;
-            response.result.fulfillment.messages[0].type = 2
-            response.result.fulfillment.messages[0].replies = [];
-            let objKeys = Object.keys(questions['sub_category']);
-            response.result.fulfillment.messages[0].replies.push('הכל');
-            objKeys.forEach(function(subCategory) {
-                response.result.fulfillment.messages[0].replies.push(questions['sub_category'][subCategory].name);
-            });
+            if (((Object.keys(userData.study_session.questions).length) !== 0) && (!!userData.study_session.stat.total_questions)) {
+                response.result.fulfillment.messages[0].title = 'התחלתי ולכן אסיים. ' +  'נשארו עוד ' + Object.keys(userData.study_session.questions).length + ' שאלות. ' + 'נסיים ואז תבחר נושא חדש.';
+                response.result.fulfillment.messages[0].type = 2
+                response.result.fulfillment.messages[0].replies = [];
+                response.result.fulfillment.messages[0].replies.push('לחזור לשאלה');
+                response.result.fulfillment.messages[0].replies.push('המשך');
+            } else {
+                response.result.fulfillment.messages[0].title = response.result.fulfillment.messages[0].speech;
+                response.result.fulfillment.messages[0].type = 2
+                response.result.fulfillment.messages[0].replies = [];
+                let objKeys = Object.keys(questions['sub_category']);
+                response.result.fulfillment.messages[0].replies.push('הכל');
+                objKeys.forEach(function(subCategory) {
+                    response.result.fulfillment.messages[0].replies.push(questions['sub_category'][subCategory].name);
+                });
+            }
         } 
         
     }
     //
+    if (response.result.action==='input.test') {
+        response.result.fulfillment.messages[0].replies = [];
+        response.result.fulfillment.messages[0].replies.push('המשך');
+    }
     if (response.result.action==='input.info_expand') {
         //
         if (userData.intent.action!=='output.information') {
@@ -919,8 +977,12 @@ function chatFlow(connObj, response, userData, source) {
     if (intentAction==='input.question') {
         let msg = msgWithQuestionStat(address, userData);
         messages.unshift(msg.toMessage());
-        //messages.push(msg);
     } else if (intentAction==='input.explain') {
+        if (((Object.keys(userData.study_session.questions).length) === 0) && (!!userData.study_session.stat.total_questions)) {
+            let msg = msgWithStudySessionStat(address, userData);
+            messages.push(msg.toMessage());
+        }
+    } else if (intentAction==='output.right_reply') {
         if (((Object.keys(userData.study_session.questions).length) === 0) && (!!userData.study_session.stat.total_questions)) {
             let msg = msgWithStudySessionStat(address, userData);
             messages.push(msg.toMessage());
@@ -937,6 +999,21 @@ function chatFlow(connObj, response, userData, source) {
     if (intentAction==='profile.first_name') {  // TODO for MVP
         dbEventEmitter.emit('eventRequest', 'Gender', address, 4000, userData || {}, false);
     }
+}
+
+function studySessionSummery(address) {
+    let fileName = 'c'+ address.channelId + 'u' + address.user.id + '.png'
+    let convert = htmlConvert();
+    let facebookCardRatioWidth = 1.91;
+    let convertOptions = {
+        height : 400,
+        width : 400 * facebookCardRatioWidth
+    };
+    //convert('https://nacho-crumbs.herokuapp.com/study_session/' + address.channelId + '/' + address.user.id + '/' + 100, convertOptions)
+    convert('http://localhost:3978/study_session/facebook/1386701014687144/100', convertOptions)
+        .pipe(fs.createWriteStream('public/images/c'+ address.channelId + 'u' + address.user.id + '.png'));
+    //
+    return fileName;
 }
 
 function msgWithStudySessionStat(address, userData) {
@@ -1029,7 +1106,7 @@ function buildMessages(response, address, source) {
     } else if (response.result.action==="input.explain") {
         startWith = 'הסבר: '; 
     } else if (response.result.action==="output.information") {
-        startWith = 'הידעת! ';
+        startWith = 'הידעת! \n';
     }
     let len = response.result.fulfillment.messages.length;
     let textResponseToQuickReplies = '';
@@ -1470,8 +1547,8 @@ function getSubCategory(sub_category, questions) {
 function sendQuestionFromStudySession(address, userData, timeout) {
     let questionIndex = Object.keys(userData.study_session.questions)[0];
     if (questionIndex===undefined) {
-        userData.study_session = buildStudySession(userData, questions);
-        questionIndex = Object.keys(userData.study_session.questions)[0];
+        studySessionEventEmitter.emit('newStudySession', address, userData, 0);
+        return;
     }
     let questionJson = {
         question : userData.study_session.questions[questionIndex]
