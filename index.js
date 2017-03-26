@@ -1068,8 +1068,13 @@ function msgWithStudySessionStat(address, userData) {
         facebookObj.facebook.quick_replies = [];
         let quick_reply = {};
         quick_reply.content_type = "text";
-        quick_reply.title = message.replies['המשך'];
-        quick_reply.payload = message.replies['המשך']; //"SOMETHING_SOMETHING";
+        quick_reply.title = 'המשך';
+        quick_reply.payload = 'המשך'; //"SOMETHING_SOMETHING";
+        facebookObj.facebook.quick_replies.push(quick_reply);
+        //
+        quick_reply.content_type = "text";
+        quick_reply.title = 'בחירת נושא חדש';
+        quick_reply.payload = 'בחירת נושא חדש'; //"SOMETHING_SOMETHING";
         facebookObj.facebook.quick_replies.push(quick_reply);
         //
         msg = new builder.Message().address(address).sourceEvent(facebookObj);
