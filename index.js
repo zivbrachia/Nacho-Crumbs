@@ -6,7 +6,7 @@ let EventEmitter = require('events').EventEmitter;
 let apiai = require('apiai');
 let webRequest = require('request');
 let schedule = require('node-schedule');
-//require('./config.js');
+require('./config.js');
 let firebase = require('firebase-admin');
 let db_credential = require('./serviceAccountKey.js');
 let BotanalyticsMiddleware = require('botanalytics-microsoftbotframework-middleware').BotanalyticsMiddleware({
@@ -123,7 +123,7 @@ server.get('/info/:channelId/:userId/:infoId', function (req, res, next) {
                     header2 = info1[req.params.infoId].expand.subtitle;
                     heading1 = info1[req.params.infoId].expand.heading;
                     lead1 = info1[req.params.infoId].expand.lead;
-                    image = info1[req.params.infoId].expand.image;
+                    image = info1[req.params.infoId].expand.image || "https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fnacho1024.png?alt=media&token=40ea8306-8bf6-4810-b2b0-f45678438746";
                 }
                 else {
                     
@@ -972,15 +972,21 @@ function chatFlow(connObj, response, userData, source) {
     //
     if (intentAction==='input.question') {
         let msg = msgWithQuestionStat(address, userData);
-        messages.unshift(msg.toMessage());
+        if (msg!==null) {
+            messages.unshift(msg.toMessage());
+        }
     } else if (intentAction==='input.explain') {
-        if (((Object.keys(userData.study_session.questions).length) === 0) && (!!userData.study_session.stat.total_questions)) {
-            let msg = msgWithStudySessionStat(address, userData);
+        if (((Object.keys(userData.study_session.questions).length) === 1) && (!!userData.study_session.stat.total_questions)) {
+            let msg = msgWithStudySessionStatImage(address, userData);
+            messages.push(msg.toMessage());
+            msg = msgWithStudySessionStat(address, userData);
             messages.push(msg.toMessage());
         }
     } else if (intentAction==='output.right_reply') {
-        if (((Object.keys(userData.study_session.questions).length) === 0) && (!!userData.study_session.stat.total_questions)) {
-            let msg = msgWithStudySessionStat(address, userData);
+        if (((Object.keys(userData.study_session.questions).length) === 1) && (!!userData.study_session.stat.total_questions)) {
+            let msg = msgWithStudySessionStatImage(address, userData);
+            messages.push(msg.toMessage());
+            msg = msgWithStudySessionStat(address, userData);
             messages.push(msg.toMessage());
         }
     }
@@ -1010,6 +1016,15 @@ function studySessionSummery(address) {
         .pipe(fs.createWriteStream('public/images/c'+ address.channelId + 'u' + address.user.id + '.png'));
     //
     return fileName;
+}
+
+function msgWithStudySessionStatImage(address, userData) {
+    let msg = new builder.Message().address(address).attachments([{
+        contentType: "image/gif",
+        contentUrl: 'https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fnacho.png?alt=media&token=73365da5-64bb-4739-a51f-51f277fd3e28'
+    }]);
+    msg.userData = userData;
+    return msg;
 }
 
 function msgWithStudySessionStat(address, userData) {
@@ -1042,6 +1057,9 @@ function msgWithQuestionStat(address, userData) {
     let length = Object.keys(userData.study_session.questions).length;
     let nume = userData.study_session.stat.total_questions - length + 1;
     let deno = userData.study_session.stat.total_questions;
+    if (deno===undefined) {
+        return msg;
+    }
     let text = "שאלה " + nume + " מתוך " + deno;
     //
     if (address.channelId==='telegram') {
@@ -1072,6 +1090,7 @@ function replyByGender(intentAction, userData, address) {  // question reply (ri
             eventName = 'RIGHT_ANSWER_REPLY_FEMALE';
             if ((userData.user_profile || 'empty'==='empty')||(userData.user_profile.gender==='male')) {
                 eventName = 'RIGHT_ANSWER_REPLY_MALE';
+                userData.study_session.stat.score = (userData.study_session.stat.score || 0) + (100 / userData.study_session.stat.total_questions);
             }
             break;
         case 'input.wrong':
