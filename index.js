@@ -1771,7 +1771,7 @@ function buildElement(message) {
     //
     let element = {
         image_url: message.imageUrl,
-        item_url: message.imageUrl,
+        //item_url: message.imageUrl,
         subtitle: message.subtitle,
         title: message.title,
         buttons: []
