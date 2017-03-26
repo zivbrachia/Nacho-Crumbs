@@ -6,7 +6,7 @@ let EventEmitter = require('events').EventEmitter;
 let apiai = require('apiai');
 let webRequest = require('request');
 let schedule = require('node-schedule');
-require('./config.js');
+//require('./config.js');
 let firebase = require('firebase-admin');
 let db_credential = require('./serviceAccountKey.js');
 let BotanalyticsMiddleware = require('botanalytics-microsoftbotframework-middleware').BotanalyticsMiddleware({
