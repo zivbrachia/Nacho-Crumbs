@@ -833,6 +833,10 @@ function chatFlow(connObj, response, userData, source) {
     let address = connObj;
     if (connObj.constructor.name=='Session') {
         address = connObj.message.address;
+        if (intentAction==='input.question') {
+            userData.question.intentId = response.result.metadata.intentId;
+            userData.question.intentName = response.result.metadata.intentName;
+        }
     }
     //
     let jsonForTimeLine = {};
@@ -914,7 +918,7 @@ function chatFlow(connObj, response, userData, source) {
         }
         let j = schedule.scheduleJob(date, function(){
             connObj.send("היי.... חזרתי");
-            lotteryQuestion(connObj.message.address, connObj.userData, process.env.TIMEOUT_QUESTION_MS);
+            sendQuestionFromStudySession(connObj.message.address, connObj.userData, process.env.TIMEOUT_QUESTION_MS);
         }.bind(null, connObj));
     } else if (actionsReturnQuestion.indexOf(intentAction)>=0) {
         sendLastQuestion(response, connObj, userData || {});
@@ -975,14 +979,7 @@ function chatFlow(connObj, response, userData, source) {
         if (msg!==null) {
             messages.unshift(msg.toMessage());
         }
-    } else if (intentAction==='input.explain') {
-        if (((Object.keys(userData.study_session.questions).length) === 1) && (!!userData.study_session.stat.total_questions)) {
-            let msg = msgWithStudySessionStatImage(address, userData);
-            messages.push(msg.toMessage());
-            msg = msgWithStudySessionStat(address, userData);
-            messages.push(msg.toMessage());
-        }
-    } else if (intentAction==='output.right_reply') {
+    } else if ((intentAction==='input.explain' || intentAction==='output.right_reply') && (!!userData.study_session.stat.total_questions)) {
         if (((Object.keys(userData.study_session.questions).length) === 1) && (!!userData.study_session.stat.total_questions)) {
             let msg = msgWithStudySessionStatImage(address, userData);
             messages.push(msg.toMessage());
@@ -1019,9 +1016,19 @@ function studySessionSummery(address) {
 }
 
 function msgWithStudySessionStatImage(address, userData) {
+    let scoreImageArr = [
+        'https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fscore%2Fnacho0.png?alt=media&token=3be45c47-881c-423c-84af-9b2a84ebb3a1',
+        'https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fscore%2Fnacho20.png?alt=media&token=ed837c63-6e43-4aa6-bf6b-09b4d9ff38c3',
+        'https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fscore%2Fnacho40.png?alt=media&token=11acc153-abe4-4f42-aa48-0454a0a110b4',
+        'https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fscore%2Fnacho60.png?alt=media&token=16cde471-f5f8-4b3e-8540-90562b29f8fb',
+        'https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fscore%2Fnacho80.png?alt=media&token=e7f31127-8e33-4ef3-876d-6e449d1f5bf4',
+        'https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fscore%2Fnacho100.png?alt=media&token=a3ec4078-0125-411e-a5e4-49d4979c9dbb'
+    ];
+    //
+    let image = scoreImageArr[((userData.study_session.stat.score || 0)*userData.study_session.stat.total_questions/100)];
     let msg = new builder.Message().address(address).attachments([{
         contentType: "image/gif",
-        contentUrl: 'https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fnacho.png?alt=media&token=73365da5-64bb-4739-a51f-51f277fd3e28'
+        contentUrl: image
     }]);
     msg.userData = userData;
     return msg;
@@ -1029,7 +1036,7 @@ function msgWithStudySessionStatImage(address, userData) {
 
 function msgWithStudySessionStat(address, userData) {
     let msg = null;
-    let text = "ענית נכון על 5 מתוך 5 שאלות";
+    let text = "ענית נכון על " + ((userData.study_session.stat.score || 0)*userData.study_session.stat.total_questions/100) + ' מתוך ' + userData.study_session.stat.total_questions + ' שאלות';
     //
     if (address.channelId==='telegram') {
         msg = new builder.Message().address(address).sourceEvent({
@@ -1039,14 +1046,26 @@ function msgWithStudySessionStat(address, userData) {
                     text: text,
                     parse_mode: 'Markdown',
                     reply_markup: {
-                        hide_keyboard: true
+                        keyboard: [[{text: 'המשך'}]]
                     }
                 }
             }
         });
     }
+    //
     else if (address.channelId==='facebook') {
-        msg = new builder.Message().address(address).text(text);
+        let facebookObj = {};
+        facebookObj.facebook = {};
+        facebookObj.facebook['text'] = text;
+        //
+        facebookObj.facebook.quick_replies = [];
+        let quick_reply = {};
+        quick_reply.content_type = "text";
+        quick_reply.title = message.replies['המשך'];
+        quick_reply.payload = message.replies['המשך']; //"SOMETHING_SOMETHING";
+        facebookObj.facebook.quick_replies.push(quick_reply);
+        //
+        msg = new builder.Message().address(address).sourceEvent(facebookObj);
     }
     msg.userData = userData;
     return msg;
