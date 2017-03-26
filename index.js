@@ -946,10 +946,6 @@ function chatFlow(connObj, response, userData, source) {
         
     }
     //
-    if (response.result.action==='input.test') {
-        response.result.fulfillment.messages[0].replies = [];
-        response.result.fulfillment.messages[0].replies.push('המשך');
-    }
     if (response.result.action==='input.info_expand') {
         //
         if (userData.intent.action!=='output.information') {
@@ -1165,7 +1161,7 @@ function buildMessages(response, address, source) {
                     facebookObj.facebook = {};
                     facebookObj.facebook['text'] = startWith + message.title;
                     if (message.title.indexOf('[>>]') !== (-1)) {
-                        facebookObj.facebook['text'] = textResponseToQuickReplies.replace(/\n/g, '\n\r');
+                        facebookObj.facebook['text'] = startWith.replace(/\n/g, '\n\r') + textResponseToQuickReplies.replace(/\n/g, '\n\r');
                     }
                     facebookObj.facebook.quick_replies = [];
                     let len = message.replies.length;
