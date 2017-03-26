@@ -1016,16 +1016,23 @@ function studySessionSummery(address) {
 }
 
 function msgWithStudySessionStatImage(address, userData) {
-    let scoreImageArr = [
-        'https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fscore%2Fnacho0.png?alt=media&token=3be45c47-881c-423c-84af-9b2a84ebb3a1',
-        'https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fscore%2Fnacho20.png?alt=media&token=ed837c63-6e43-4aa6-bf6b-09b4d9ff38c3',
-        'https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fscore%2Fnacho40.png?alt=media&token=11acc153-abe4-4f42-aa48-0454a0a110b4',
-        'https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fscore%2Fnacho60.png?alt=media&token=16cde471-f5f8-4b3e-8540-90562b29f8fb',
-        'https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fscore%2Fnacho80.png?alt=media&token=e7f31127-8e33-4ef3-876d-6e449d1f5bf4',
-        'https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fscore%2Fnacho100.png?alt=media&token=a3ec4078-0125-411e-a5e4-49d4979c9dbb'
-    ];
+    let scoreImageArr = {
+        "0" : "https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fscore%2Fnacho0.png?alt=media&token=3be45c47-881c-423c-84af-9b2a84ebb3a1",
+        "20" : "https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fscore%2Fnacho20.png?alt=media&token=ed837c63-6e43-4aa6-bf6b-09b4d9ff38c3",
+        "40" : "https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fscore%2Fnacho40.png?alt=media&token=11acc153-abe4-4f42-aa48-0454a0a110b4",
+        "60" : "https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fscore%2Fnacho60.png?alt=media&token=16cde471-f5f8-4b3e-8540-90562b29f8fb",
+        "80" : "https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fscore%2Fnacho80.png?alt=media&token=e7f31127-8e33-4ef3-876d-6e449d1f5bf4",
+        "100" : "https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fscore%2Fnacho100.png?alt=media&token=a3ec4078-0125-411e-a5e4-49d4979c9dbb"
+    }
     //
-    let image = scoreImageArr[((userData.study_session.stat.score || 0)*userData.study_session.stat.total_questions/100)];
+    let score = userData.study_session.stat.score || 0;
+    let scoreModulo = score % 20;
+    if (scoreModulo > 20/2) {
+        score = score - scoreModulo + 20;
+    } else {
+        score = score - scoreModulo;
+    }
+    let image = scoreImageArr[score];   //*userData.study_session.stat.total_questions/100)];
     let msg = new builder.Message().address(address).attachments([{
         contentType: "image/gif",
         contentUrl: image
@@ -1046,7 +1053,7 @@ function msgWithStudySessionStat(address, userData) {
                     text: text,
                     parse_mode: 'Markdown',
                     reply_markup: {
-                        keyboard: [[{text: 'המשך'}]]
+                        keyboard: [[{text: 'המשך'}], [{text: 'בחירת נושא חדש'}]]
                     }
                 }
             }
@@ -1109,7 +1116,7 @@ function replyByGender(intentAction, userData, address) {  // question reply (ri
             eventName = 'RIGHT_ANSWER_REPLY_FEMALE';
             if ((userData.user_profile || 'empty'==='empty')||(userData.user_profile.gender==='male')) {
                 eventName = 'RIGHT_ANSWER_REPLY_MALE';
-                userData.study_session.stat.score = (userData.study_session.stat.score || 0) + (100 / userData.study_session.stat.total_questions);
+                userData.study_session.stat.score = Math.floor((userData.study_session.stat.score || 0) + (100 / userData.study_session.stat.total_questions));
             }
             break;
         case 'input.wrong':
@@ -1499,10 +1506,15 @@ function lotteryInformation(address, userData, timeout) {
         intent = objkeys1[Math.floor(Math.random() * infoLen)];
         eventName = information[subCategory][intent]['name'];
     } else {
-        let objKeys = Object.keys(information[userData.sub_category]);
-        let infoLen = objKeys.length;
-        intent = objKeys[Math.floor(Math.random() * infoLen)];
-        eventName = information[userData.sub_category][intent]['name'];
+        try {
+            let objKeys = Object.keys(information[userData.sub_category]);
+            let infoLen = objKeys.length;
+            intent = objKeys[Math.floor(Math.random() * infoLen)];
+            eventName = information[userData.sub_category][intent]['name'];
+        } catch (err) {
+            intent = '2a39d02f-b37a-438b-bdcd-0f24a468219b';
+            eventName = 'Information_1';
+        }
         
     }
     userData.intent.action = 'output.information';
@@ -1533,7 +1545,7 @@ function buildStudySession(userData, questions) {
         let question = getQuestion(subCategory, tempQuestions)
         //
         if (question.id===undefined) {
-            return;
+            break;
         } else {
             study_session.questions[question.id] = question.question;
         }
