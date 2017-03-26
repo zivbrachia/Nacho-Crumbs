@@ -960,7 +960,7 @@ function chatFlow(connObj, response, userData, source) {
                 let infoL = Object.keys(information[subCategory]);
                 infoL.forEach(function(info) {
                     if (info===userData.intent.id) {
-                        response.result.fulfillment.messages[0].buttons[1].postback = response.result.fulfillment.messages[0].buttons[0].postback + address.channelId + '/' + address.user.id + '/' + userData.intent.id;
+                        response.result.fulfillment.messages[0].buttons[0].postback = response.result.fulfillment.messages[0].buttons[0].postback + address.channelId + '/' + address.user.id + '/' + userData.intent.id;
                         response.result.fulfillment.messages[0].imageUrl = information[subCategory][info]['expand']['image'];
                         response.result.fulfillment.messages[0].subtitle = information[subCategory][info]['expand']['subtitle'];
                         response.result.fulfillment.messages[0].title = information[subCategory][info]['expand']['title'];
