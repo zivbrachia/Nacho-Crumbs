@@ -930,7 +930,16 @@ function chatFlow(connObj, response, userData, source) {
             userData.category = 'dna';
             userData.sub_category = response.result.parameters.subcategory;
         } else {
-            if (((Object.keys(userData.study_session.questions).length) !== 0) && (!!userData.study_session.stat.total_questions)) {
+            let len = null;
+            let total_questions = null;
+            try {
+                len = Object.keys(userData.study_session.questions).length;
+                total_questions = userData.study_session.stat.total_questions;
+            } catch (err) {
+                len = 0;
+                total_questions = false;
+            }
+            if ((len !== 0) && (!!total_questions)) {
                 response.result.fulfillment.messages[0].title = 'התחלתי ולכן אסיים. ' +  'נשארו עוד ' + Object.keys(userData.study_session.questions).length + ' שאלות. ' + 'נסיים ואז תבחר נושא חדש.';
                 response.result.fulfillment.messages[0].type = 2
                 response.result.fulfillment.messages[0].replies = [];
