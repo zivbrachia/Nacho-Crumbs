@@ -1072,6 +1072,7 @@ function msgWithStudySessionStat(address, userData) {
         quick_reply.payload = 'המשך'; //"SOMETHING_SOMETHING";
         facebookObj.facebook.quick_replies.push(quick_reply);
         //
+        quick_reply = {};
         quick_reply.content_type = "text";
         quick_reply.title = 'בחירת נושא חדש';
         quick_reply.payload = 'בחירת נושא חדש'; //"SOMETHING_SOMETHING";
@@ -1091,7 +1092,7 @@ function msgWithQuestionStat(address, userData) {
     if (deno===undefined) {
         return msg;
     }
-    let text = "שאלה " + nume + " מתוך " + deno;
+    let text = "שאלה " + nume + " מתוך " + deno + " ("+ userData.question.intentName.split('_')[2] +")";
     //
     if (address.channelId==='telegram') {
         msg = new builder.Message().address(address).sourceEvent({
@@ -1517,8 +1518,8 @@ function lotteryInformation(address, userData, timeout) {
             intent = objKeys[Math.floor(Math.random() * infoLen)];
             eventName = information[userData.sub_category][intent]['name'];
         } catch (err) {
-            intent = '2a39d02f-b37a-438b-bdcd-0f24a468219b';
-            eventName = 'Information_1';
+            intent = '473f9059-9a8e-4a15-b451-0cde057421c0';
+            eventName = 'Information_101';
         }
         
     }
