@@ -266,6 +266,7 @@ function readAddresses(req, res, next, channelId, eventName) {
         Object.keys(users).forEach( function (user) {
             let address = users[user].address;
             if (address===undefined) return;
+            if (channelId==='facebook') 
             if ((channelId==='telegram')&(user!=='154226484')) return;
             //
             let userData = users[user].userData;
@@ -1132,6 +1133,7 @@ function replyByGender(intentAction, userData, address) {  // question reply (ri
             if ((userData.user_profile || 'empty'==='empty')||(userData.user_profile.gender==='male')) {
                 eventName = 'RIGHT_ANSWER_REPLY_MALE';
                 userData.study_session.stat.score = Math.floor((userData.study_session.stat.score || 0) + (100 / userData.study_session.stat.total_questions));
+                userData.score = Math.floor((userData.score || 0) + (100 / userData.study_session.stat.total_questions));
             }
             break;
         case 'input.wrong':
