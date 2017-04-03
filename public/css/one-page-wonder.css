@@ -13,7 +13,7 @@ body {
     width: 100%;
     text-align: center;
     /*background: url('http://placehold.it/1900x500') no-repeat center center scroll;*/
-    background: url('https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fnacho1024.png?alt=media&token=40ea8306-8bf6-4810-b2b0-f45678438746') no-repeat center center scroll;
+    background: url('https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fnacho_header.png?alt=media&token=fcf78063-6dec-4dae-937c-6d1c954ee211') no-repeat center center scroll;
     -webkit-background-size: cover;
     -moz-background-size: cover;
     background-size: cover;
@@ -175,5 +175,55 @@ footer {
     .featurette-image.pull-right {
         margin-bottom: 10px;
         margin-left: 0;
+    }
+}
+
+
+/*TEST*/
+.navbar-inverse
+{
+background: #00feff; /* Old browsers */
+background: -moz-linear-gradient(left, #00feff 0%, #2aeaf4 100%); /* FF3.6-15 */
+background: -webkit-linear-gradient(left, #00feff 0%,#2aeaf4 100%); /* Chrome10-25,Safari5.1-6 */
+background: linear-gradient(to right, #00feff 0%,#2aeaf4 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */
+filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#00feff', endColorstr='#2aeaf4',GradientType=1 ); /* IE6-9 */
+border: none;
+box-shadow: -3px -7px 12px 6px #888888;
+}
+
+#nacho-logo
+{
+    /*width:350px;*/
+    position: absolute;
+    top:10px;
+    z-index: 10000;
+    left:242px;
+}
+
+.header-image
+{
+    height: 410px;
+}
+
+#header-title
+{
+    display: none;
+}
+
+@media only screen and (max-width: 500px) {
+    #nacho-logo
+    {
+        position: absolute;
+        top:16px;
+        z-index: 10000;
+        left:33px;
+    }
+
+    #header-title
+    {
+        display: inline;
+        width:250px;
+        margin-top:205px;
+        /*position: absolute;*/
     }
 }
