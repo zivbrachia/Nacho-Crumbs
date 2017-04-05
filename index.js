@@ -1027,7 +1027,7 @@ function chatFlow(connObj, response, userData, source) {
         if (msg!==null) {
             messages.unshift(msg.toMessage());
         }
-    } else if ((intentAction==='input.explain' || intentAction==='output.right_reply') && (!!userData.study_session.stat.total_questions)) {
+    } else if ((intentAction==='input.explain' || intentAction==='input.right_reply') && (!!userData.study_session.stat.total_questions)) {
         if (((Object.keys(userData.study_session.questions).length) === 1) && (!!userData.study_session.stat.total_questions)) {
             let msg = msgWithStudySessionStatImage(address, userData);
             messages.push(msg.toMessage());
@@ -1091,7 +1091,7 @@ function msgWithStudySessionStatImage(address, userData) {
 
 function msgWithStudySessionStat(address, userData) {
     let msg = null;
-    let text = "ענית נכון על " + ((userData.score || 0)*userData.study_session.stat.total_questions/100) + ' מתוך ' + userData.study_session.stat.total_questions + ' שאלות' + ' ' + userData.score;
+    let text = "ענית נכון על " + ((userData.score || 0)*userData.study_session.stat.total_questions/100) + ' מתוך ' + userData.study_session.stat.total_questions + ' שאלות';
     //
     if (address.channelId==='telegram') {
         msg = new builder.Message().address(address).sourceEvent({
