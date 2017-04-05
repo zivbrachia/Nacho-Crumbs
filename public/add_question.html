@@ -2,13 +2,15 @@
 <html lang="en">
 
 <head>
-
+    <meta name="theme-color" content="#2aeaf4" />
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="">
     <meta name="author" content="">
-
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/limonte-sweetalert2/6.5.5/sweetalert2.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/limonte-sweetalert2/6.5.5/sweetalert2.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.0/jquery.min.js"></script>
     <title>Add New Question</title>
 
     <!-- Bootstrap Core CSS -->
@@ -243,8 +245,10 @@
         </div>
         
         <hr class="featurette-divider">
-
-        
+        <div>
+            <button onclick="myFunction()">Click me</button>
+        </div
+        <p id="demo"></p>
         
         
 
@@ -268,6 +272,37 @@
 
     <!-- Bootstrap Core JavaScript -->
     <script src="js/bootstrap.min.js"></script>
+
+    <script>
+        function myFunction() {
+            swal.queue([{
+            title: 'Save Question',
+            confirmButtonText: 'Save my question',
+            text:
+                'Your question will be save',
+            showLoaderOnConfirm: true,
+            preConfirm: function () {
+                return new Promise(function (resolve) {
+                $.post('https://dd9b3305.ngrok.io/add_question',
+                    {
+                        "category" : $('#category').val(), 
+                        "sub_category" : $('#sub_category').val(), 
+                        "question" : $('#question').val(),
+                        "right_answer" : $('#right_answer').val(),
+                        "wrong_answer_1" : $('#wrong_answer_1').val(),
+                        "wrong_answer_2" : $('#wrong_answer_2').val(),
+                        "wrong_answer_3" : $('#wrong_answer_3').val(),
+                        "hint" : $('#hint').val(),
+                        "show_answer" : $('#show_answer').val()
+                    }).done(function (data) {
+                        swal.insertQueueStep("qqq")
+                        resolve()
+                    })
+                })
+            }
+            }])
+        }
+    </script>
 
 </body>
 

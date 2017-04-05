@@ -1027,7 +1027,7 @@ function chatFlow(connObj, response, userData, source) {
         if (msg!==null) {
             messages.unshift(msg.toMessage());
         }
-    } else if ((intentAction==='input.explain' || intentAction==='input.right_reply') && (!!userData.study_session.stat.total_questions)) {
+    } else if ((intentAction==='input.explain' || intentAction==='input.right') && (!!userData.study_session.stat.total_questions)) {
         if (((Object.keys(userData.study_session.questions).length) === 1) && (!!userData.study_session.stat.total_questions)) {
             let msg = msgWithStudySessionStatImage(address, userData);
             messages.push(msg.toMessage());
