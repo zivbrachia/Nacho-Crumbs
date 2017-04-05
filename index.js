@@ -15,6 +15,7 @@ let BotanalyticsMiddleware = require('botanalytics-microsoftbotframework-middlew
 let fs = require('fs');
 let bodyParser = require('body-parser'); // for webhook
 let htmlConvert = require('html-convert');
+let answerMale = require('./apiai_template/intents/Answer_Reply_Male.js');
 
 const STUDY_SESSION = 5;  // number of question for each study session;
 
@@ -771,7 +772,7 @@ studySessionEventEmitter.on('newStudySession', function (address, userData, time
 
 dbEventEmitter.on('eventRequest', function (eventName, address, timeout, userData, session) {
     //eventName = "Question_Ask_109";
-    console.error('setTimeout ' + eventName + ' : '+ timeout || process.env.TIMEOUT_QUESTION_MS);
+    console.error('setTimeout ' + eventName + ' : '+ (timeout || process.env.TIMEOUT_QUESTION_MS) + ", SCORE: " + (userData.score || 0));
     setTimeout(function () {
         let event = {
             name : eventName,
@@ -857,9 +858,10 @@ function chatFlow(connObj, response, userData, source) {
     }
     //
     //
-    if (intentAction==='output.wrong_reply') {
-        dbEventEmitter.emit('eventRequest', userData.question.intentName.replace('Ask', 'Explain'), address, 4000, userData || {}, false);
-        //return;
+    //if (intentAction==='output.wrong_reply') {
+    if (intentAction==='input.wrong') {
+        dbEventEmitter.emit('eventRequest', userData.question.intentName.replace('Ask', 'Explain'), address, 0, userData || {}, false);
+        return;
     }
     if ((!userData.intent)&(intentAction!=='input.welcome')) { // first time ever - sends default welcome intent - whatever the user says
         dbEventEmitter.emit('eventRequest', 'WELCOME', address, 0, userData || {}, false);
@@ -882,11 +884,31 @@ function chatFlow(connObj, response, userData, source) {
     if (actionsReplyByGender.indexOf(intentAction)>=0) {
         // go to reply by gender
         // always connObj will be 'Session' object, cannot answer questions with proactive that connObj is 'Address' object
+        if (intentAction==='input.right') {
+            userData.score = Math.floor((userData.score || 0) + (100 / userData.study_session.stat.total_questions));
+            response.result.fulfillment.messages[0] = 
+                {
+                    "title": answerMale.rightAnswerMale(),
+                    "replies": [
+                        "המשך"
+                    ],
+                    "type": 2
+                };
+        }
+        else if (intentAction==='input.wrong') { 
+            response.result.fulfillment.messages[0] = 
+                {
+                    "speech": answerMale.wrongAnswerMale(),
+                    "type": 0
+                }
+        }
+        /*
         if (response.result.fulfillment.messages[0].speech==='') {
             replyByGender(intentAction, connObj.userData, address)
             // there is no reason to continue the function and send messages because there is none...
             return;
         }
+        */
     } else if (actionsMetaQuestion.indexOf(intentAction)>=0) {
         // always connObj will be 'Session' object, cannot ask metaQuestions with proactive that connObj is 'Address' object
         inputMetaQuestion(response, connObj);
@@ -982,6 +1004,22 @@ function chatFlow(connObj, response, userData, source) {
         console.log(response.result.fulfillment.messages[0].buttons[1]);
     }
     //
+    if (intentAction==='input.explain') {
+        response.result.fulfillment.messages.unshift(
+            {
+                "speech": "הסבר לתשובה",
+                "type": 0
+            }
+        );
+        //
+        response.result.fulfillment.messages.unshift(
+            {
+                "speech": answerMale.wrongAnswerMale(),
+                "type": 0
+            }
+        );
+    }
+    //
     let messages = buildMessages(response, address, source);
     //
     if (intentAction==='input.question') {
@@ -1027,15 +1065,15 @@ function studySessionSummery(address) {
 
 function msgWithStudySessionStatImage(address, userData) {
     let scoreImageArr = {
-        "0" : "https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fscore%2Fnacho0.png?alt=media&token=3be45c47-881c-423c-84af-9b2a84ebb3a1",
-        "20" : "https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fscore%2Fnacho20.png?alt=media&token=ed837c63-6e43-4aa6-bf6b-09b4d9ff38c3",
-        "40" : "https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fscore%2Fnacho40.png?alt=media&token=11acc153-abe4-4f42-aa48-0454a0a110b4",
-        "60" : "https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fscore%2Fnacho60.png?alt=media&token=16cde471-f5f8-4b3e-8540-90562b29f8fb",
-        "80" : "https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fscore%2Fnacho80.png?alt=media&token=e7f31127-8e33-4ef3-876d-6e449d1f5bf4",
-        "100" : "https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fscore%2Fnacho100.png?alt=media&token=a3ec4078-0125-411e-a5e4-49d4979c9dbb"
+        "0" : "https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fscore%2F0.png?alt=media&token=7022f574-e372-491b-9153-f19f48efbd80",
+        "20" : "https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fscore%2F20.png?alt=media&token=9fe2b020-4930-42bf-bec7-8e2d6e3ea502",
+        "40" : "https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fscore%2F40.png?alt=media&token=20bc945f-d8b2-4889-aa1b-2f9d0efc58d3",
+        "60" : "https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fscore%2F60.png?alt=media&token=d6f49751-0243-481d-8f5f-e9cd9be908fa",
+        "80" : "https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fscore%2F80.png?alt=media&token=604284a3-fb04-4dd5-9cfa-e1daaf271863",
+        "100" : "https://firebasestorage.googleapis.com/v0/b/nacho-crumbs.appspot.com/o/photos%2Fscore%2F100.png?alt=media&token=8819d184-c0d0-4b68-b2fa-9156369f23b1"
     }
     //
-    let score = userData.study_session.stat.score || 0;
+    let score = (userData.score || 0);
     let scoreModulo = score % 20;
     if (scoreModulo > 20/2) {
         score = score - scoreModulo + 20;
@@ -1044,7 +1082,7 @@ function msgWithStudySessionStatImage(address, userData) {
     }
     let image = scoreImageArr[score];   //*userData.study_session.stat.total_questions/100)];
     let msg = new builder.Message().address(address).attachments([{
-        contentType: "image/gif",
+        contentType: "image/png",
         contentUrl: image
     }]);
     msg.userData = userData;
@@ -1053,7 +1091,7 @@ function msgWithStudySessionStatImage(address, userData) {
 
 function msgWithStudySessionStat(address, userData) {
     let msg = null;
-    let text = "ענית נכון על " + ((userData.study_session.stat.score || 0)*userData.study_session.stat.total_questions/100) + ' מתוך ' + userData.study_session.stat.total_questions + ' שאלות';
+    let text = "ענית נכון על " + ((userData.score || 0)*userData.study_session.stat.total_questions/100) + ' מתוך ' + userData.study_session.stat.total_questions + ' שאלות' + ' ' + userData.score;
     //
     if (address.channelId==='telegram') {
         msg = new builder.Message().address(address).sourceEvent({
@@ -1063,7 +1101,7 @@ function msgWithStudySessionStat(address, userData) {
                     text: text,
                     parse_mode: 'Markdown',
                     reply_markup: {
-                        keyboard: [[{text: 'המשך'}], [{text: 'בחירת נושא חדש'}]]
+                        keyboard: [[{text: 'המשך'}]]
                     }
                 }
             }
@@ -1162,7 +1200,8 @@ function buildMessages(response, address, source) {
     } else if (response.result.action==="input.hint") {
         startWith = 'רמז: ';
     } else if (response.result.action==="input.explain") {
-        startWith = 'הסבר: '; 
+        //startWith = 'הסבר: ';
+        startWith = '';
     } else if (response.result.action==="output.information") {
         startWith = 'הידעת! \n';
     }
@@ -1569,6 +1608,7 @@ function buildStudySession(userData, questions) {
     }
     //
     study_session.stat.total_questions = Object.keys(study_session.questions).length;
+    userData.score = 0;
     //
     return study_session;
 }
