@@ -253,13 +253,16 @@ server.get('/user/:channelId/:userId', function(req, res, next) {
     });
 });
 
+server.get('/start/:channelId/:userId/:eventName', function(req, res, next) {
+    readAddresses(req, res, next, req.params.channelId, req.params.eventName, req.params.userId || '');
+});
+
 server.get('/start/:channelId/:eventName', function(req, res, next) {
     console.error("test console error");
     readAddresses(req, res, next, req.params.channelId, req.params.eventName);
 });
 
-function readAddresses(req, res, next, channelId, eventName) {
-    //ref.child('users').child(channelId).child('1386701014687144').child('address').once("value", function(snapshot) {
+function sendToChannel(req, res, next, channelId, eventName) {
     ref.child('users').child(channelId).once("value", function(snapshot) {
         let users = snapshot.val();
         if (users===null) return;
@@ -281,6 +284,37 @@ function readAddresses(req, res, next, channelId, eventName) {
             next();
             console.log("The read failed: " + errorObject.code);
     });
+}
+
+function sendToUser(req, res, next, channelId, eventName, userId) {
+    ref.child('users').child(channelId).child(userId).once("value", function(snapshot) {
+        let user = snapshot.val();
+        if (user===null) return;
+        ////////////////////////////////////////////////////
+        let address = user.address;
+        if (address===undefined) return;
+        //if (channelId==='facebook') 
+        //if ((channelId==='telegram')&(user!=='154226484')) return;
+        //
+        let userData = user.userData;
+        //
+        dbEventEmitter.emit('eventRequest', eventName, address, 0, userData, false);
+        next();
+        ////////////////////////////////////////////////////
+        }, function (errorObject) {
+            res.send('error');
+            next();
+            console.log("The read failed: " + errorObject.code);
+    });
+}
+
+function readAddresses(req, res, next, channelId, eventName, userId) {
+    userId = (userId || '');
+    if (userId==='') {
+        sendToChannel(req, res, next, channelId, eventName);
+    } else {
+        sendToUser(req, res, next, channelId, eventName, userId);
+    }
 }
   
 // Create chat bot
