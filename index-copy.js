@@ -1,86 +1,15 @@
 'use strict';
 
-let restify = require('restify');
-let builder = require('botbuilder');
 let EventEmitter = require('events').EventEmitter;
-let apiai = require('apiai');
-let webRequest = require('request');
-let schedule = require('node-schedule');
-//require('./config.js');
-let firebase = require('firebase-admin');
-let db_credential = require('./serviceAccountKey.js');
-let BotanalyticsMiddleware = require('botanalytics-microsoftbotframework-middleware').BotanalyticsMiddleware({
-    token: process.env.BOTANALYTICS_TOKEN
-});
-let fs = require('fs');
-let bodyParser = require('body-parser'); // for webhook
-let htmlConvert = require('html-convert');
 let answerMale = require('./apiai_template/intents/Answer_Reply_Male.js');
 
 const STUDY_SESSION = 5;  // number of question for each study session;
-
-firebase.initializeApp({
-    credential: firebase.credential.cert(db_credential.serviceAccount),
-    databaseURL: process.env.DB_URL
-});
-
-// setup firebase reference
-let ref = firebase.database().ref();
 let questions = null;
 let questionIndex = {};
-ref.child('category').child('dna').once("value", function(snapshot) {
-        questions = snapshot.val();
-        //
-        let categoryL = Object.keys(questions);
-        categoryL.forEach(function(subCategory) {
-            if (subCategory==='name') return;
-            let subCategoryL = Object.keys(questions[subCategory]);
-            subCategoryL.forEach(function(sub_cat) {
-                let questionsL = Object.keys(questions[subCategory][sub_cat].questions);
-                questionsL.forEach(function (question) {
-                    questionIndex[question] = questionIndex[question] || {};
-                    questionIndex[question].category = 'dna';
-                    questionIndex[question].subCategory = questionIndex[question].subCategory || [];
-                    questionIndex[question].subCategory.push(sub_cat);
-                });
-            });
-        });
-}, function (errorObject) {
-    console.log("The read failed: " + errorObject.code);
-});
-//
-let information = null;
-ref.child('information').child('dna').once("value", function(snapshot) {
-    information = snapshot.val();
-}, function (errorObject) {
-    console.log("The read failed: " + errorObject.code);
-});
-
-let app = apiai(process.env.APIAI_CLIENT_ACCESS_TOKEN);
 
 //=========================================================
 // Bot Setup
 //=========================================================
-// Setup Restify Server
-let server = restify.createServer();
-server.listen(process.env.port || process.env.PORT || 3978, function () {
-   console.log('%s listening to %s', server.name, server.url); 
-});
-
-server.get('/', function(req, res, next) {
-    res.send('hello');
-    next();
-});
-
-server.get('/add_question', function (req, res, next) {
-    let html = fs.readFileSync(__dirname + '/public/add_question.html', 'utf8');
-    res.end(html);
-});
-
-server.get('/add_info', function (req, res, next) {
-    let html = fs.readFileSync(__dirname + '/public/add_info.html', 'utf8');
-    res.end(html);
-});
 
 server.get('/study_session/:channelId/:userId/:score', function (req, res, next) {
     if (req.params.channelId==='facebook') {
@@ -144,16 +73,8 @@ server.get('/info/:channelId/:userId/:infoId', function (req, res, next) {
     });
 });
 
-server.get('/public/:folder/:fileName', function (req, res, next) {
-    let file = fs.readFileSync(__dirname + '/public/' + req.params.folder + '/' + req.params.fileName, 'utf8');
-    res.end(file);
-});
-//
-server.get('/build', function(req, res, next) {
-    getAllIntents();
-    res.send('build intent went good');
-    next();
-});
+
+
 //
 server.get('/user/:channelId/:userId', function(req, res, next) {
     let channelId = req.params.channelId;
@@ -262,230 +183,10 @@ server.get('/start/:channelId/:eventName', function(req, res, next) {
     readAddresses(req, res, next, req.params.channelId, req.params.eventName);
 });
 
-function sendToChannel(req, res, next, channelId, eventName) {
-    ref.child('users').child(channelId).once("value", function(snapshot) {
-        let users = snapshot.val();
-        if (users===null) return;
-        ////////////////////////////////////////////////////
-        Object.keys(users).forEach( function (user) {
-            let address = users[user].address;
-            if (address===undefined) return;
-            //if (channelId==='facebook') 
-            //if ((channelId==='telegram')&(user!=='154226484')) return;
-            //
-            let userData = users[user].userData;
-            //
-            dbEventEmitter.emit('eventRequest', eventName, address, 0, userData, false);
-        }, this);
-        next();
-        ////////////////////////////////////////////////////
-        }, function (errorObject) {
-            res.send('error');
-            next();
-            console.log("The read failed: " + errorObject.code);
-    });
-}
-
-function sendToUser(req, res, next, channelId, eventName, userId) {
-    ref.child('users').child(channelId).child(userId).once("value", function(snapshot) {
-        let user = snapshot.val();
-        if (user===null) return;
-        ////////////////////////////////////////////////////
-        let address = user.address;
-        if (address===undefined) return;
-        //if (channelId==='facebook') 
-        //if ((channelId==='telegram')&(user!=='154226484')) return;
-        //
-        let userData = user.userData;
-        //
-        dbEventEmitter.emit('eventRequest', eventName, address, 0, userData, false);
-        next();
-        ////////////////////////////////////////////////////
-        }, function (errorObject) {
-            res.send('error');
-            next();
-            console.log("The read failed: " + errorObject.code);
-    });
-}
-
-function readAddresses(req, res, next, channelId, eventName, userId) {
-    userId = (userId || '');
-    if (userId==='') {
-        sendToChannel(req, res, next, channelId, eventName);
-    } else {
-        sendToUser(req, res, next, channelId, eventName, userId);
-    }
-}
-  
-// Create chat bot
-let connector = new builder.ChatConnector({
-    appId: process.env.MICROSOFT_APP_ID,
-    appPassword: process.env.MICROSOFT_APP_PASSWORD
-});
-//
-let bot = new builder.UniversalBot(connector);
-// Use the middleware
-bot.use({
-    receive: BotanalyticsMiddleware.receive,
-    send: BotanalyticsMiddleware.send
-    
-});
-
-server.use(bodyParser.json());   // webhook
-server.use(bodyParser.urlencoded({extended: true})) // support encoded bodies for add_question post textarea
-server.post('/api/messages', connector.listen());
-
-server.post('/add_question', function create(req, res, next) {
-    createQuestionSession(
-        req.body.category, 
-        req.body.sub_category, 
-        req.body.question,
-        req.body.right_answer,
-        req.body.wrong_answer_1,
-        req.body.wrong_answer_2,
-        req.body.wrong_answer_3,
-        req.body.hint,
-        req.body.show_answer);
-    res.redirect('/add_question', next);
-});
-
-server.post('/add_info', function create(req, res, next) {
-    createInfoSession(
-        req.body.category, 
-        req.body.sub_category, 
-        req.body.info_short,
-        req.body.title,
-        req.body.sub_title,
-        req.body.heading,
-        req.body.lead,
-        req.body.url);
-    res.redirect('/add_info', next);
-});
-
-function createInfoSession(Category, SubCategory, info_short, title, sub_title, heading, lead, url) {
-    ref.child('settings').child('info_number').once("value", function(snapshot) {
-        let InfoNumber = snapshot.val();
-        if (InfoNumber===null) {
-            InfoNumber = 101;
-        }
-        //
-        let client = require('restify').createJsonClient({
-            url: 'https://api.api.ai/v1/intents/'
-        });
-        //
-        let options = {};
-        options.headers = {};
-        options.headers.Authorization = process.env.APIAI_AUTHORIZATION;
-        options.headers['content-type'] = 'application/json; charset=utf-8';
-        //
-        let intentArray = [];
-        //
-        let infoIntent = createIntentInfo(InfoNumber, Category, SubCategory, info_short, title, sub_title, heading, lead, url);
-        //
-        intentArray.push(infoIntent);
-        //
-        client.post(options, intentArray, function(err, req, res, obj) {
-            let response = JSON.parse(res.body);
-            if (response.status.code===200) {
-                ref.child('settings').update({"info_number" : InfoNumber + 1});
-                ref.child('information').child(Category.toLowerCase()).child(SubCategory.toLowerCase()).child(response.id).update(
-                    {
-                        "name" : "Information_" + InfoNumber,
-                        "expand" : {
-                            "heading" : heading,
-                            "image" : url,
-                            "lead" : lead,
-                            "subtitle" : sub_title,
-                            "title" : title
-                        }
-                    });
-            }
-            else {
-                //res.end(res.body);
-            }
-        });
-        //
-        }, function (errorObject) {
-            res.send('error');
-            next();
-            console.log("The read failed: " + errorObject.code);
-    });
-}
-
 function createIntentInfo(InfoNumber, Category, SubCategory, info_short, title, sub_title, heading, lead, url) {
     let info = require("./apiai_template/intents/Information_X.js").infoTemplate(InfoNumber, Category, SubCategory, info_short, title, sub_title, heading, lead, url);
     //
     return info;
-}
-
-function createQuestionSession(Category, SubCategory, questionText, rightAnswer, wrongAnswer1, wrongAnswer2, wrongAnswer3, hintText, explainText) {
-    ref.child('settings').child('question_number').once("value", function(snapshot) {
-        let QuestionNumber = snapshot.val();
-        if (QuestionNumber===null) {
-            QuestionNumber = 1;
-        }
-        //
-        let client = require('restify').createJsonClient({
-            url: 'https://api.api.ai/v1/intents/'
-        });
-        //
-        let options = {};
-        options.headers = {};
-        options.headers.Authorization = process.env.APIAI_AUTHORIZATION;
-        options.headers['content-type'] = 'application/json; charset=utf-8';
-        //
-        let intentArray = [];
-        //
-        let questionIntent = createIntentQuestionAsk(QuestionNumber, Category, SubCategory, questionText, rightAnswer, wrongAnswer1, wrongAnswer2, wrongAnswer3);
-        let rightAnswerIntent = createIntentRightAnswer(QuestionNumber, rightAnswer);
-        let wrongAnswerIntent = createIntentWrongAnswer(QuestionNumber, wrongAnswer1, wrongAnswer2, wrongAnswer3);
-        let hintIntent = createIntentHint(QuestionNumber, hintText);
-        let explainIntent = createIntentExplain(QuestionNumber, explainText, rightAnswer);
-        let hintAskIntent = createIntentHintAsk(QuestionNumber, hintText);
-        let skipIntent = createIntentSkip(QuestionNumber);
-        //
-        //intentArray.push(questionIntent);
-        intentArray.push(rightAnswerIntent);
-        intentArray.push(wrongAnswerIntent);
-        intentArray.push(hintIntent);
-        intentArray.push(explainIntent);
-        intentArray.push(hintAskIntent);
-        intentArray.push(skipIntent);
-        //
-        client.post(options, questionIntent, function(err, req, res, obj) {
-            let result = JSON.parse(res.body);
-            if (result.status.code===200) {
-                ref.child('category').child(Category.toLowerCase()).child('sub_category').child(SubCategory.toLowerCase()).child('questions').child(result.id).update({
-                    "events" : [
-                        {
-                            "name" : "Question_Ask_" + QuestionNumber
-                        }
-                    ],
-                    "level" : 1,
-                    "name" : "Question_Ask_" + QuestionNumber
-                });
-            }
-            else {
-                //res.end(res.body);
-            }
-        });
-        //
-        client.post(options, intentArray, function(err, req, res, obj) {
-            //console.log(JSON.parse(res.body));
-            let status = JSON.parse(res.body).status;
-            if (status.code===200) {
-                ref.child('settings').update({"question_number" : QuestionNumber + 1});
-            }
-            else {
-                //res.end(res.body);
-            }
-        });
-        //
-        }, function (errorObject) {
-            res.send('error');
-            next();
-            console.log("The read failed: " + errorObject.code);
-    });
 }
 
 function createIntentSkip(QuestionNumber) {
@@ -493,6 +194,7 @@ function createIntentSkip(QuestionNumber) {
     //
     return skip;
 }
+
 function createIntentHintAsk(QuestionNumber, hintText) {
     let hintAsk = require("./apiai_template/intents/Question_HintAsk_X.js").hintAskTemplate(QuestionNumber, hintText);
     //
@@ -510,6 +212,7 @@ function createIntentHint(QuestionNumber, hintText) {
     //
     return hint;
 }
+
 function createIntentWrongAnswer(QuestionNumber, wrongAnswer1, wrongAnswer2, wrongAnswer3) { 
     let wrongAnswer = require("./apiai_template/intents/Question_Wrong_X.js").wrongTemplate(QuestionNumber, wrongAnswer1, wrongAnswer2, wrongAnswer3);
 
@@ -537,117 +240,9 @@ function createIntentQuestionAsk(QuestionNumber, Category, SubCategory, question
     return question;
 }
 
-server.post('/webhook', function create(req, res, next) {   // webhook
-    console.log('hook request');
-    let bodyParser = require('body-parser');
-    try {
-        //var speech = 'empty speech';
-        var speech = '';
-
-        if (req.body) {
-            var requestBody = req.body;
-
-            if (requestBody.result) {
-                //requestBody.result.parameters.any
-                ref.child('contacts').once("value", function(snapshot) {
-                    let contacts = snapshot.val();
-                    //
-                    if (requestBody.result.action==='save_contact') {
-                        speech = 'שמרתי את הנתונים, תודה :)';
-                        let position = contacts.length;
-                        let contact = {};
-                        contact['name'] = requestBody.result.parameters['name'];
-                        contact['phone-number'] = requestBody.result.parameters['phone-number'][0];
-                        contact['job-place'] = requestBody.result.parameters['job-place'][0];
-                        contact['job-title'] = requestBody.result.parameters['job-title'][0];
-                        contacts.push(contact);
-                        let refUser = ref.child('contacts').set(contacts);
-                    }
-                    else {
-                        contacts.forEach(function(contact) {
-                            if (contact.name.indexOf(requestBody.result.parameters.any)>=0) {
-                                speech += contact.name + ' ' + contact['phone-number'];
-                                speech += '\n';
-                            } 
-                            if (contact['job-place'].indexOf(requestBody.result.parameters.any)>=0) {
-                                speech += contact.name + ' ' + contact['phone-number'];
-                                speech += '\n';
-                            }
-                            if (contact['job-title'].indexOf(requestBody.result.parameters.any)>=0) {
-                                speech += contact.name + ' ' + contact['phone-number'];
-                                speech += '\n';
-                            }
-                            if (contact['phone-number'].indexOf(requestBody.result.parameters.any)>=0) {
-                                speech += contact.name + ' ' + contact['phone-number'];
-                                speech += '\n';
-                            }
-                        }, this);
-                    }
-                    //
-                    console.log(speech);
-                    if (!speech) {
-                        speech = 'empty speech'
-                    }
-                    return res.json({
-                        speech: speech,
-                        displayText: speech,
-                        source: 'apiai-webhook-sample'
-                    });
-                }, function (errorObject) {
-                    console.log("The read failed: " + errorObject.code);
-                });
-            }
-        }
-    } catch (err) {
-        console.error("Can't process request", err);
-
-        return res.status(400).json({
-            status: {
-                code: 400,
-                errorType: err.message
-            }
-        });
-    }
-});
 //=========================================================
 // Bots Dialogs
-//=========================================================
-let intents = new builder.IntentDialog();
-
-intents.onDefault(function (session) {
-    let now = new Date();
-    console.log('typing... message text: ' + session.message.text);
-    session.sendTyping();
-    //
-    
-    let lastSendTime = new Date(session.userData.lastSendTime || now);
-    //console.log('lastSendTime: ' + lastSendTime.toTimeString());
-    lastSendTime.setMinutes(lastSendTime.getMinutes() + parseInt(process.env.APIAI_SESSION_TIMEOUT));
-    //console.log('lastSendTime: ' + lastSendTime.toTimeString());
-    //
-    let textRequest = null;
-    if (lastSendTime.getTime() < now.getTime()) {
-        let eventName = session.userData.intent.name;
-        dbEventEmitter.emit('eventRequest', eventName, session.message.address, 0, session.userData, session); // first revoke the user session
-        //textRequest = setTextRequest(session);                                                          // second send the last user text
-    } else {
-        textRequest = setTextRequest(session);
-    }
-    //
-    if ((session.message.address.channelId === 'facebook') & (session.userData.user_profile || 'empty'==='empty')) {
-        userProfileEventEmitter.emit('facebook_user_profile', session, textRequest);
-    } else {
-        if (textRequest!==null) {
-            textRequest.end();
-        }
-    }
-    
-    if (!session.userData.address) {
-        let refUser = ref.child('users').child(session.message.address.channelId).child(session.message.address.user.id).child('address').update(session.message.address);
-        session.userData.address = true;
-    }
-});
-
+//========================================================
 function setTextRequest(session) {
     if (!session.userData.address) {
         session.message.text = 'hello';
@@ -670,46 +265,6 @@ function setTextRequest(session) {
 
     return textRequest;
 }
-
-intents.matches(/^reset userData/i, function (session){
-     session.userData = {};
-     session.send("userData has been reset");
-});
-
-intents.matches(/^show userData/i, function (session){
-     session.send(JSON.stringify(session.userData));
-     session.sendBatch(function (err) {
-        console.log(err);
-     });
-});
-
-intents.matches(/^db/i, function (session){
-    let refUser = ref.child('users').child(session.message.address.channelId).child(session.message.address.user.id).child('questions');
-    //refUser.update({[session.message.text.split(" ")[1]]: session.message.text.split(" ")[2]});
-    let now = new Date();
-    refUser = refUser.child(session.message.text.split(" ")[1]);
-    refUser = refUser.child('timeline');
-    let timeline = {};
-    timeline[now.getTime()] = {};
-    timeline[now.getTime()].action = session.message.text.split(" ")[2];
-    refUser.update(timeline);
-});
-
-intents.matches(/^hello/i, function (session){
-     console.log('text: '+ session.message.text);
-     console.log(session.userData.ziv);
-     session.send("Hi there");
-     //https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=iw&dt=t&q=Neta
-     webRequest('https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=iw&dt=t&q=Brachia', function (error, response, body) {
-        if (!error && response.statusCode == 200) {
-            let result = body.split('"');
-            console.log('user_name_translated to: ' + result[1]);
-            session.send('How do you do, ' + result[1])
-            //session.userData.user_profile = user_profile;
-            //let refUser = ref.child('users').child(session.message.address.channelId).child(session.message.address.user.id).child('userData').child('user_profile').update(user_profile);
-        }
-    });
-});
 
 bot.dialog('/', intents);
 //////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -867,7 +422,7 @@ function chatFlow(connObj, response, userData, source) {
     let actionNotSaveTimeline = ['output.wrong_reply', 'output.right_reply', 'input.hint_reply'];
     //
     let address = connObj;
-    if (connObj.constructor.name=='Session') {
+    if (connObj.constructor.name==='Session') {
         address = connObj.message.address;
         if (intentAction==='input.question') {
             userData.question.intentId = response.result.metadata.intentId;
@@ -1082,20 +637,6 @@ function chatFlow(connObj, response, userData, source) {
     }
 }
 
-function studySessionSummery(address) {
-    let fileName = 'c'+ address.channelId + 'u' + address.user.id + '.png'
-    let convert = htmlConvert();
-    let facebookCardRatioWidth = 1.91;
-    let convertOptions = {
-        height : 400,
-        width : 400 * facebookCardRatioWidth
-    };
-    //convert('https://nacho-crumbs.herokuapp.com/study_session/' + address.channelId + '/' + address.user.id + '/' + 100, convertOptions)
-    convert('http://localhost:3978/study_session/facebook/1386701014687144/100', convertOptions)
-        .pipe(fs.createWriteStream('public/images/c'+ address.channelId + 'u' + address.user.id + '.png'));
-    //
-    return fileName;
-}
 
 function msgWithStudySessionStatImage(address, userData) {
     let scoreImageArr = {
@@ -1740,12 +1281,16 @@ function inputMetaQuestion(response, session) {
             readCurrentIntent(session);
         } else {
             //dbEventEmitter.emit('eventRequest', session.userData.intent.event, address);
-            ///eventRequestEmit(session);
+            eventRequestEmit(session);
         }
     }
     else if (response.result.action==='input.explain_last_question') {
         dbEventEmitter.emit('eventRequest', session.userData.event.replace('Ask', 'Explain') || '', session.message.address, 0, session.userData, false);
     }
+}
+
+function eventRequestEmit(session) {
+    dbEventEmitter.emit('eventRequest', session.userData.event || '', session.message.address, 0, session.userData, false);
 }
 
 function readCurrentIntent(session) {
@@ -1756,7 +1301,7 @@ function readCurrentIntent(session) {
         let eventName = user.event;
         session.userData.event = eventName;
         //dbEventEmitter.emit('eventRequest', connObj.userData.intent.event, address);
-        ///eventRequestEmit(session);
+        eventRequestEmit(session);
         ////////////////////////////////////////////////////
     }, function (errorObject) {
         console.log("The read failed: " + errorObject.code);
@@ -1784,76 +1329,6 @@ function updateNames() {
     }, function (errorObject) {
         console.log("The read failed: " + errorObject.code);
     });     
-}
-
-function getAllIntents(){
-    let client = require('restify').createJsonClient({
-        url: 'https://api.api.ai/v1/intents'
-    });
-    let options = {};
-    options.headers = {};
-    options.headers.Authorization = process.env.APIAI_AUTHORIZATION;
-
-    client.get(options,function(err, req, res) {
-        syncFromApiaiToDb(JSON.parse(res.body));
-        updateNames()
-    });
-}
-
-function syncFromApiaiToDb(intents) {
-    let metaData = {};
-    try {
-        let len = intents.length;
-        for (let i=0; i<(len); i++) {
-            let intent = intents[i];
-            buildToxonomy(intent, metaData);
-        }
-    } catch (err) {}
-    let refCategory = ref.child('category').update(metaData);
-}
-
-function buildToxonomy(intent, metaData) {
-    if(intent.name.indexOf('Information') > -1) {
-        return;
-    }
-    let temp = buildIntexCatalog(intent);
-    if (temp.category.name===undefined) {
-        return;
-    }
-    metaData[temp.category.name] = metaData[temp.category.name] || {};
-    metaData[temp.category.name]['sub_category'] = metaData[temp.category.name]['sub_category'] || {};
-    let len = temp.category.subcategory.length || 0;
-    for (let i=0; i<(len); i++) {
-        metaData[temp.category.name]['sub_category'][temp.category.subcategory[i].name] = metaData[temp.category.name]['sub_category'][temp.category.subcategory[i].name] || {};
-        metaData[temp.category.name]['sub_category'][temp.category.subcategory[i].name]['questions'] = metaData[temp.category.name]['sub_category'][temp.category.subcategory[i].name]['questions'] || {};
-        metaData[temp.category.name]['sub_category'][temp.category.subcategory[i].name]['questions'][intent.id] = {
-            'name': intent.name,
-            'events': intent.events,
-            'level' : temp.level || 1
-        };
-    }
-}
-
-function buildIntexCatalog(intent) {
-    let temp = {};
-    temp.category = {};
-    temp.category.subcategory = [];
-    let len = intent.contextOut.length;
-    for (let i=0; i<(len); i++) {
-        let context = intent.contextOut[i];
-        if (context.name.toLowerCase().indexOf(('level_')) !== (-1)) {
-            let result = context.name.toLowerCase().split(('level_'));
-            temp.level = result[1];
-        } else if (context.name.toLowerCase().indexOf(('subcategory_')) !== (-1)) {
-            let result = context.name.toLowerCase().split(('subcategory_'));
-            let subcategory = {name: result[1]};
-            temp.category['subcategory'].push(subcategory);
-        } else if (context.name.toLowerCase().indexOf(('category_')) !== (-1)) {
-            let result = context.name.toLowerCase().split(('category_'));
-            temp.category['name'] = result[1];
-        }
-    }
-    return temp;
 }
 
 function cardJson(address, response, messageIndex) {
