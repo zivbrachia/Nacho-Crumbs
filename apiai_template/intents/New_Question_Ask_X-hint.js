@@ -1,6 +1,6 @@
 module.exports = {hintTemplate};
 
-function hintTemplate(QuestionNumber, parentId, rootParentId, speech) {
+function hintTemplate(QuestionNumber, parentId, rootParentId, speech, arrReplies) {
     let hintTemplate = {
         "templates" : ["@ClueCommand:ClueCommand "],
         "userSays" : [
@@ -30,10 +30,17 @@ function hintTemplate(QuestionNumber, parentId, rootParentId, speech) {
                 "action": "Question_Ask_"+QuestionNumber+".hint",
                 "affectedContexts" : [],
                 "parameters" : [],
-                "messages": [
+                "messages" : [
                     {
-                        "type": 0,
-                        "speech": speech
+                        "type" : 0,
+                        "speech" : speech + "[\u003e\u003e]"    // [>>]
+                    },
+                    {
+                        "title" : "[\u003e\u003e]",
+                        "replies" : [
+                            arrReplies[0], arrReplies[1], arrReplies[2], arrReplies[3]
+                        ],
+                        "type" : 2
                     }
                 ]
             }

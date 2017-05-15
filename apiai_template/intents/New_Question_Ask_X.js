@@ -1,6 +1,6 @@
 module.exports = {questionTemplate};
 
-function questionTemplate(QuestionNumber, Category, SubCategory, questionText, rightAnswer, wrongAnswer1, wrongAnswer2, wrongAnswer3) {
+function questionTemplate(QuestionNumber, Category, SubCategory, questionText, arrReplies) {
     let questionTemplate = {
         "templates" : ["שאלה" + QuestionNumber],
         "userSays" : [
@@ -59,12 +59,10 @@ function questionTemplate(QuestionNumber, Category, SubCategory, questionText, r
                     {
                         "title" : "[\u003e\u003e]",
                         "replies" : [
-                            rightAnswer, wrongAnswer1, wrongAnswer2, wrongAnswer3
+                            arrReplies[0], arrReplies[1], arrReplies[2], arrReplies[3]
                         ],
                         "type" : 2
-
                     }
-
                 ]
             }
         ],

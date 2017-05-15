@@ -150,19 +150,20 @@ server.post('/add_question', function create(req, res, next) {
     let q_number = null;
     let parentId = null
     let rootParentId = null;
+    let arrReplies = apiai.buildArrReplies(req.body);
     let queryQ = db.queryQuestionNumber();
     queryQ.then(
         function (questionNumber) {
             console.log(questionNumber);
             q_number = questionNumber;
-            return apiai.createIntentQuestionAskPromise(questionNumber, req.body);
+            return apiai.createIntentQuestionAskPromise(questionNumber, req.body, arrReplies);
         }
     ).then(
         function (resultId) {
             parentId = resultId;
             rootParentId = resultId;
             console.log(resultId);
-            return apiai.createIntentFollowUpPromise(q_number, req.body, parentId, rootParentId);
+            return apiai.createIntentFollowUpPromise(q_number, req.body, parentId, rootParentId, arrReplies);
         }
     ).then(
         function (status) {

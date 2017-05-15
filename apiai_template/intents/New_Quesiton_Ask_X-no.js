@@ -45,7 +45,16 @@ function wrongTemplate(QuestionNumber, parentId, rootParentId, wrongAnswer1, wro
                 "resetContexts" : false,
                 "action": "Question_Ask_" + QuestionNumber + ".no",
                 "affectedContexts" : [],
-                "parameters" : [],
+                "parameters": [
+                    {
+                    "name": "address",
+                    "value": "#Question_Ask_" +QuestionNumber+"-followup.address"
+                    },
+                    {
+                    "name": "userData",
+                    "value": "#Question_Ask_" +QuestionNumber+"-followup.userData"
+                    }
+                ],
                 "messages": [
                     {
                         "type": 0,

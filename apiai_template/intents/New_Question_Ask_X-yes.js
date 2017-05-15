@@ -27,7 +27,16 @@ function answerTemplate(QuestionNumber, rightAnswer, parentId, rootParentId, spe
                 "resetContexts" : false,
                 "action": "Question_Ask_"+ QuestionNumber +".yes",
                 "affectedContexts" : [],
-                "parameters" : [],
+                "parameters": [
+                    {
+                    "name": "address",
+                    "value": "#Question_Ask_"+ QuestionNumber +"-followup.address"
+                    },
+                    {
+                    "name": "userData",
+                    "value": "#Question_Ask_"+ QuestionNumber +"-followup.userData"
+                    }
+                ],
                 "messages": [
                     {
                         "type": 0,

@@ -1,6 +1,6 @@
 module.exports = {fallbackTemplate};
 
-function fallbackTemplate(QuestionNumber, parentId, rootParentId, speech) {
+function fallbackTemplate(QuestionNumber, parentId, rootParentId, speech, arrReplies) {
     let fallbackTemplate = {
         "templates" : [],
         "userSays" : [],
@@ -17,10 +17,17 @@ function fallbackTemplate(QuestionNumber, parentId, rootParentId, speech) {
                 "action": "Question_Ask_" + QuestionNumber + ".fallback",
                 "affectedContexts" : [],
                 "parameters" : [],
-                "messages": [
+                "messages" : [
                     {
-                        "type": 0,
-                        "speech": speech /* hint text */
+                        "type" : 0,
+                        "speech" : speech + "[\u003e\u003e]"    // [>>]
+                    },
+                    {
+                        "title" : "[\u003e\u003e]",
+                        "replies" : [
+                            arrReplies[0], arrReplies[1], arrReplies[2], arrReplies[3]
+                        ],
+                        "type" : 2
                     }
                 ]
             }
