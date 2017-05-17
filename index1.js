@@ -137,7 +137,7 @@ server.get('/user/:channelId/:userId', function(req, res, next) {
 });
 
 server.get('/start/:channelId/:userId/:eventName', function(req, res, next) {
-    readAddresses(req, res, next, req.params.channelId, req.params.eventName, req.params.userId || '');
+    util.readAddresses(req, res, next, req.params.channelId, req.params.eventName, req.params.userId || '');
 });
 
 server.get('/start/:channelId/:eventName', function(req, res, next) {
