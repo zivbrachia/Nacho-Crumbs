@@ -1,6 +1,6 @@
 'use strict';
 
-require('./config.js');
+//require('./config.js');
 let restify = require('./lib/restify.js');
 let fs = require('./lib/file_system.js');
 let db = require('./lib/database.js');
