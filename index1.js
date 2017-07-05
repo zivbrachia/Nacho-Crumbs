@@ -1,6 +1,6 @@
 'use strict';
 
-//require('./config.js');
+require('./config.js');
 let restify = require('./lib/restify.js');
 let fs = require('./lib/file_system.js');
 let db = require('./lib/database.js');
@@ -152,14 +152,20 @@ function chapters(req, next) {
         req.userData.chapter = req.body.result.parameters.chapter;
         if (req.userData.chapter==="5") {
             let messages = [];
-            messages.push(buildMessage("צ'או אמיגו, ת'שמעו מה קרה אתמול הייתי עם אשתי מאיה  אצל הרופא, בשורות טובות בקרוב אהפוך לאבא. אין לכם מושג כמה אני מצפה למוצ'צ'ו הקטן. הרופא סיפר לנו מה צריך לעשות לקראת הלידה, לא תאמינו כמה דברים צריך לעשות. כבר כמה חודשים שהיא נוטלת כדורים של חומצה פולית הקרוי גם ויטמין B9. אתם יודעים אני היפסטר, לא סובל לקחת כדורים, מעדיף לקבל הכל מהטבע. חומצה פולית הכרחית ליצור תאים חדשים ולשימורם, ולכן חשובה במיוחד בתקופות של חלוקת תאים מהירה - כגון בגדילת המוצ'צ'ו הקטן שלי.  חלוקת תאים מהירה דורשת תהליך מיטוזה מדויק שייצר תאים איכותיים למוצ'צ'ו איכותי."));
-            messages.push(buildMessageQuickReplies('אז אני שואל אתכם מה זו מיטוזה?', ["חלוקת התא", "מכונית", "הכפלת DNA"]));
+            messages.push(buildMessageQuickReplies('עכשיו שבחרנו פרק אפשר להמשיך', ["המשך"]));
             req.send_messages = {messages: messages};
+            next();
+        }
+        else if (req.userData.chapter==="0") {
+            let messages = [];
+            messages.push(buildMessageQuickReplies('עכשיו שבחרנו פרק אפשר להמשיך', ["המשך"]));
+            req.send_messages = {messages: messages};
+            next();
         }
         else {
             req.send_messages = req.body.result.fulfillment.messages;
+            next();
         }
-        next();
     } else {
         let messages = [];
         db.getChapters(function (chapters, res) {
@@ -285,18 +291,40 @@ function callEvent(eventName, sessionId, params, req, next) {
         }
 
     client.post(options, body, function(err, reqApi, resApi, obj) {
-        chapters(req, next);
-        
-        /*
-        curl -X POST -H "Content-Type: application/json" -d '{
-  "recipient": {
-    "id": "USER_ID"
-  },
-  "message": {
-    "text": "hello, world!"
-  }
-}' "https://graph.facebook.com/v2.6/me/messages?access_token=PAGE_ACCESS_TOKEN"
-*/
+        req.send_messages = obj.result.fulfillment.messages;
+        next();
+    });
+}
+
+function sendMessage(user_id, message) {
+    var client = restify.restify.createJsonClient({
+        url: 'https://graph.facebook.com',
+        version: '*'
+    });
+
+    var options = {
+        path: '/v2.6/me/messages?access_token=' + 'EAADW6j7AJtABAH0CyJcqY81m8eKjKlduO6XNQBQa6JWZCcEpg6cFtEHZAIZArP98sVph3zMnzklhVPmQ63LN6FMnsO4UPg6TiAvcEXnXrqfbyB3iXwrIFw9QnxvtjSLtgXpGfiDLCIou0NeKoaWOioili6zk4BZCpOpBA5HwcQZDZD'//process.env.FACEBOOK_PAGE_ACCESS_TOKEN
+    }
+
+    var body = 
+        {
+            "recipient": {
+                "id": user_id
+            }, 
+            "message": {
+                "text": message,
+                "quick_replies": [
+                    {
+                        "content_type":"text",
+                        "title" : "test",
+                        "payload" : "test"
+                    }
+                ]
+            }
+        }
+
+    client.post(options, body, function(err, reqMsg, resMsg, obj) {
+        console.log(err);
     });
 }
 
