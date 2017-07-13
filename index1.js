@@ -1,6 +1,6 @@
 'use strict';
 
-//require('./config.js');
+require('./config.js');
 let restify = require('./lib/restify.js');
 let fs = require('./lib/file_system.js');
 let db = require('./lib/database.js');
@@ -126,7 +126,7 @@ server.get('/start/:channelId/:eventName', function(req, res, next) {
 
 server.post('/api/messages', builder.connector.listen());
 
-server.post('/hook', [setUserData, buildMessages, saveUserData, sendMessages]);
+/*server.post('/hook', [setUserData, buildMessages, saveUserData, sendMessages]);*/
 
 function setUserData(req, res, next) {
     req.source = (req.body.originalRequest) && (req.body.originalRequest.source);
@@ -256,12 +256,7 @@ function buildMessages(req, res, next) {
     } catch (err) {
         console.error("Can't process request", err);
 
-        return res.status(400).json({
-            status: {
-                code: 400,
-                errorType: err.message
-            }
-        });
+        return res.status(400).json(err);
     }
 }
 
