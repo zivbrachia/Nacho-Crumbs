@@ -21,7 +21,8 @@
     "html-convert": "^2.1.7",
     "node-schedule": "^1.2.0",
     "request": "^2.81.0",
-    "restify": "^4.3.0"
+    "restify": "^4.3.0",
+    "shuffle-array": "^1.0.1"
   },
   "engines": {
     "node": "6.11.1",
