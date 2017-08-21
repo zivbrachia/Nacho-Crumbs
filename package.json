@@ -14,6 +14,7 @@
     "body-parser": "^1.17.1",
     "botanalytics-microsoftbotframework-middleware": "0.0.1",
     "botbuilder": "^3.8.0",
+    "botframework-directlinejs": "^0.9.11",
     "enum": "^2.4.0",
     "events": "^1.1.1",
     "firebase-admin": "^4.2.1",
