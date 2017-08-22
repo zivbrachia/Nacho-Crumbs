@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <link href="https://unpkg.com/botframework-webchat/botchat.css" rel="stylesheet" />
+</head>
+
+<body>
+  <div id="bot" />
+  <script src="https://unpkg.com/botframework-webchat/botchat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fingerprintjs2/1.5.1/fingerprint2.min.js"></script>
+
+  <script>
+    var fp = new Fingerprint2();
+    fp.get(function (result, components) {
+      BotChat.App({
+        directLine: { secret: 'c2VsFnabiDE.cwA.Xfc.lqlI2Bo-2IPpMSW7FFd_dAgP2W64Y_2cs0B9aOui1c8' },
+        user: { id: result },
+        bot: { id: 'botid' },
+        resize: 'detect'
+      }, document.getElementById("bot"));
+    });
+  </script>
+</body>
+
+</html>
+<!--<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" type="text/css" href="public/css/chat_style.css">
+
+<title>Nacho Crumbs</title>
+</head>
+
+<body>
+  
+  <iframe src='https://webchat.botframework.com/embed/nachocrumbs?s=vqMl7mxnKfQ.cwA.dtk.8x4Q3sm0HGG_BKZQrYYeJldKbn7wWb094MDt1_TlbWI'  width="100%" height="100%"></iframe>
+
+
+</body>
+
+</html>-->

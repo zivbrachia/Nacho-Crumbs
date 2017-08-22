@@ -1,6 +1,6 @@
 'use strict';
 
-//require('./config.js');
+require('./config.js');
 let restify = require('./lib/restify.js');
 let fs = require('./lib/file_system.js');
 let db = require('./lib/database.js');
@@ -8,7 +8,7 @@ let builder = require('./lib/botbuilder.js');
 let apiai = require('./lib/apiai.js');
 let util = require('./lib/util.js');
 let bodyParser = require('body-parser'); // for webhook
-//let directline = require('botframework-directlinejs');
+let DirectLine = require('botframework-directlinejs');
 
 
 let server = restify.createServer(3978);
@@ -19,8 +19,15 @@ server.use(bodyParser.urlencoded({extended: true})) // support encoded bodies fo
 const STUDY_SESSION = 5;  // number of question for each study session;
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 server.get('/', function(req, res, next) {
-    res.send('hello');
-    next();
+    //res.send('hello');
+    //next();
+    let html = fs.readFileSync(__dirname + '/public/chat.html');    
+    res.end(html);
+});
+
+server.get('/send/:source/:userId/:msg', function (req, res, next) {
+    builder.proactive(req.params.source, req.params.userId, req.params.msg);
+    res.json("ok");
 });
 
 server.get('/chat', function (req, res, next) {
@@ -127,6 +134,30 @@ server.get('/start/:channelId/:eventName', function(req, res, next) {
 
 server.post('/api/messages', builder.connector.listen());
 
+server.get({ path: 'api/directline/:fingerprint', version: "1.0.0" }, function (req, res, next) {
+    var directLine = new DirectLine.DirectLine({
+        //secret: "c2VsFnabiDE.cwA.Xfc.lqlI2Bo-2IPpMSW7FFd_dAgP2W64Y_2cs0B9aOui1c8"/* put your Direct Line secret here */,
+        token: "c2VsFnabiDE.cwA.Xfc.lqlI2Bo-2IPpMSW7FFd_dAgP2W64Y_2cs0B9aOui1c8"/* or put your Direct Line token here (supply secret OR token, not both) */,
+        //domain: /* optional: if you are not using the default Direct Line endpoint, e.g. if you are using a region-specific endpoint, put its full URL here */
+        webSocket: false/* optional: false if you want to use polling GET to receive messages. Defaults to true (use WebSocket). */,
+        //pollingInterval: /* optional: set polling interval in milliseconds. Default to 1000 */,
+        //conversationId: 'HPAm2xzuNi1BhK76YN1HlF'
+    });
+    directLine.conversationId = 'HPAm2xzuNi1BhK76YN1HlF';
+    directLine.postActivity({
+        "type": "message",
+        "from": {
+            "id": "neta"
+        },
+        "text": "פרק 5"
+    }).subscribe(
+        id => console.log("Posted activity, assigned ID ", id),
+        error => console.log("Error posting activity", error)
+    );
+
+    directLine.activity$.subscribe(activity => console.log(activity));
+});
+    
 /*server.post('/hook', [setUserData, buildMessages, saveUserData, sendMessages]);*/
 
 function setUserData(req, res, next) {
