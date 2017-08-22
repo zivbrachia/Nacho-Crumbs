@@ -1,6 +1,6 @@
 'use strict';
 
-require('./config.js');
+//require('./config.js');
 let restify = require('./lib/restify.js');
 let fs = require('./lib/file_system.js');
 let db = require('./lib/database.js');
@@ -8,7 +8,7 @@ let builder = require('./lib/botbuilder.js');
 let apiai = require('./lib/apiai.js');
 let util = require('./lib/util.js');
 let bodyParser = require('body-parser'); // for webhook
-let DirectLine = require('botframework-directlinejs');
+//let DirectLine = require('botframework-directlinejs');
 
 
 let server = restify.createServer(3978);
